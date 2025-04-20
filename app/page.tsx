@@ -19,6 +19,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import DiscFilters from "@/components/disc-filters"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { formatBrandName } from "@/lib/format-utils"
 
 interface Disc {
   id: string
@@ -230,7 +231,7 @@ export default function Home() {
             </div>
 
             {/* Main disc info - Brand Name format */}
-            <h3 className="text-lg font-bold truncate">{`${disc.brand} ${disc.name}`}</h3>
+            <h3 className="text-lg font-bold truncate">{`${formatBrandName(disc.brand)} ${disc.name}`}</h3>
             <div className="flex justify-end items-center mb-2">
               <span className="text-sm font-medium">{disc.weight}g</span>
             </div>
@@ -281,7 +282,7 @@ export default function Home() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[80px]">Image</TableHead>
-            <TableHead>Name</TableHead>
+            <TableHead>Mold</TableHead>
             <TableHead>Brand</TableHead>
             <TableHead>Plastic</TableHead>
             <TableHead>Weight</TableHead>
@@ -319,7 +320,7 @@ export default function Home() {
                   {disc.name}
                 </button>
               </TableCell>
-              <TableCell>{disc.brand}</TableCell>
+              <TableCell>{formatBrandName(disc.brand)}</TableCell>
               <TableCell>{disc.plastic}</TableCell>
               <TableCell>{disc.weight}g</TableCell>
               <TableCell>{disc.color}</TableCell>

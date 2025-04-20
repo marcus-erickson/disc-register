@@ -6,6 +6,7 @@ import { useAuth } from "@/app/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { MobileNav } from "./mobile-nav"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -42,7 +43,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Green banner */}
       <header className="bg-green-600 text-white shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Disc Register</h1>
+          <div className="flex items-center">
+            <MobileNav />
+            <h1 className="text-2xl font-bold">Disc Register</h1>
+          </div>
           {user && (
             <div className="flex items-center gap-4">
               <span className="hidden md:inline">{userName || "Welcome"}</span>

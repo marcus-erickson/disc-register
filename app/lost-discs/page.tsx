@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/app/context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, ExternalLinkIcon, Search } from "lucide-react"
+import { CalendarIcon, ExternalLinkIcon, Search, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
@@ -20,7 +20,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { format } from "date-fns"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { X } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatBrandName } from "@/lib/format-utils"
 
 interface LostDisc {
   id: string
@@ -289,7 +290,7 @@ export default function LostAndFound() {
             </div>
 
             {/* Main disc info - simplified */}
-            <h3 className="text-lg font-bold truncate">{`${disc.brand} ${disc.name}`}</h3>
+            <h3 className="text-lg font-bold truncate">{`${formatBrandName(disc.brand)} ${disc.name}`}</h3>
             <div className="text-sm text-gray-600 mb-2">{disc.color}</div>
 
             {/* Written info (if available) */}
@@ -316,6 +317,90 @@ export default function LostAndFound() {
           </div>
         </Card>
       ))}
+    </div>
+  )
+
+  const renderListView = () => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[80px]">Image</TableHead>
+            <TableHead>Mold</TableHead>
+            <TableHead>Brand</TableHead>
+            <TableHead>Color</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Date Found</TableHead>
+            <TableHead>Written Info</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredDiscs.map((disc) => (
+            <TableRow key={disc.id}>
+              <TableCell>
+                {disc.images && disc.images.length > 0 && imageUrls[disc.id] ? (
+                  <div className="relative w-12 h-12 rounded-md overflow-hidden">
+                    <Image
+                      src={imageUrls[disc.id] || "/placeholder.svg"}
+                      alt={disc.name}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center">
+                    <span className="text-xs text-gray-400">No image</span>
+                  </div>
+                )}
+              </TableCell>
+              <TableCell className="font-medium">
+                <button
+                  className="hover:underline text-left font-medium"
+                  onClick={() => router.push(`/lost-discs/${disc.id}`)}
+                >
+                  {disc.name}
+                </button>
+              </TableCell>
+              <TableCell>{formatBrandName(disc.brand)}</TableCell>
+              <TableCell>{disc.color}</TableCell>
+              <TableCell>{formatLocation(disc)}</TableCell>
+              <TableCell>{formatDate(disc.date_found)}</TableCell>
+              <TableCell>{disc.written_info || "-"}</TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/lost-discs/${disc.id}`)}
+                  className="ml-2"
+                >
+                  View
+                </Button>
+                {canEditDisc(disc) && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/lost-and-found/edit/${disc.id}`)}
+                      className="ml-2"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteClick(disc.id)}
+                      className="ml-2 text-red-600"
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 
@@ -367,8 +452,10 @@ export default function LostAndFound() {
                 <Button className="text-blue-600 hover:underline">Report a lost disc</Button>
               </Link>
             </div>
-          ) : (
+          ) : viewMode === "grid" ? (
             renderGridView()
+          ) : (
+            renderListView()
           )}
         </div>
 

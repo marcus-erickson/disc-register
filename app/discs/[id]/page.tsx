@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { formatBrandName } from "@/lib/format-utils"
 
 interface Disc {
   id: string
@@ -215,7 +216,7 @@ export default function DiscDetails() {
             <div className="md:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{`${disc.brand} ${disc.name}`}</CardTitle>
+                  <CardTitle>{`${formatBrandName(disc.brand)} ${disc.name}`}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
@@ -223,7 +224,7 @@ export default function DiscDetails() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-500">Brand</p>
-                        <p className="font-medium">{disc.brand}</p>
+                        <p className="font-medium">{formatBrandName(disc.brand)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Name</p>
