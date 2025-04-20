@@ -2,7 +2,6 @@
   "buildCommand": "node prebuild.js && next build",
   "installCommand": "rm -f pnpm-lock.yaml && pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
-  "ignoreCommand": "echo 'Ignoring Supabase functions'",
   "outputDirectory": ".next",
   "builds": [
     {
