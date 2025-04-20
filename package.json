@@ -59,11 +59,11 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "@supabase/supabase-js": "latest",
-    "uuid": "latest",
     "fs": "latest",
     "path": "latest",
     "child_process": "latest",
-    "@supabase/auth-helpers-nextjs": "latest"
+    "@supabase/auth-helpers-nextjs": "latest",
+    "uuid": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

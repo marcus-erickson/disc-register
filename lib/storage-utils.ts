@@ -1,5 +1,7 @@
 import { supabase } from "./supabase"
 import { v4 as uuidv4 } from "uuid"
+// Import the resizeImage function at the top of the file
+import { resizeImage } from "./image-utils"
 
 // Function to ensure the bucket exists using our server-side API
 async function ensureBucketExists(bucketName: string): Promise<void> {
@@ -23,6 +25,7 @@ async function ensureBucketExists(bucketName: string): Promise<void> {
   }
 }
 
+// Update the uploadDiscImage function to resize the image before uploading
 export async function uploadDiscImage(file: File, discId: string): Promise<string> {
   const bucketName = "disc-images"
 
@@ -30,11 +33,14 @@ export async function uploadDiscImage(file: File, discId: string): Promise<strin
     // Ensure the bucket exists before uploading
     await ensureBucketExists(bucketName)
 
+    // Resize the image before uploading (max 800x800 pixels)
+    const resizedFile = await resizeImage(file, 800, 800, 0.8)
+
     const fileExt = file.name.split(".").pop()
     const fileName = `${uuidv4()}.${fileExt}`
     const filePath = `disc-images/${discId}/${fileName}`
 
-    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, file)
+    const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, resizedFile)
 
     if (uploadError) {
       throw uploadError

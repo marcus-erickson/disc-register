@@ -91,7 +91,15 @@ export default function ImageGallery({ imagePaths }: ImageGalleryProps) {
     <div className="space-y-2">
       <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden">
         {selectedImage && (
-          <Image src={selectedImage || "/placeholder.svg"} alt="Disc" fill className="object-contain" />
+          <Image
+            src={selectedImage || "/placeholder.svg"}
+            alt="Disc"
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            loading="eager"
+            priority={true}
+          />
         )}
       </div>
 
@@ -105,7 +113,14 @@ export default function ImageGallery({ imagePaths }: ImageGalleryProps) {
                 selectedImage === url ? "border-blue-500" : "border-transparent"
               }`}
             >
-              <Image src={url || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-contain" />
+              <Image
+                src={url || "/placeholder.svg"}
+                alt={`Thumbnail ${index + 1}`}
+                fill
+                className="object-contain"
+                sizes="100px"
+                loading="lazy"
+              />
             </button>
           ))}
         </div>

@@ -21,25 +21,28 @@ export default function ImageUpload({ discId, onImageUploaded, disabled = false 
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Update the handleFileChange function to show a preview of the resized image
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       return
     }
 
     const file = e.target.files[0]
-    const fileReader = new FileReader()
-
-    fileReader.onload = (e) => {
-      if (e.target?.result) {
-        setPreview(e.target.result as string)
-      }
-    }
-
-    fileReader.readAsDataURL(file)
 
     try {
       setUploading(true)
       setError(null)
+
+      // Create a preview of the original image
+      const fileReader = new FileReader()
+      fileReader.onload = (e) => {
+        if (e.target?.result) {
+          setPreview(e.target.result as string)
+        }
+      }
+      fileReader.readAsDataURL(file)
+
+      // Upload the resized image (resizing happens in the uploadDiscImage function)
       const filePath = await uploadDiscImage(file, discId)
       onImageUploaded(filePath)
 
