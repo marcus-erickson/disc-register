@@ -13,20 +13,25 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "../context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import Header from "@/components/header"
+import ImageUpload from "@/components/image-upload"
 
 export default function AddDisc() {
   const router = useRouter()
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [discId, setDiscId] = useState<string | null>(null)
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
 
   const [disc, setDisc] = useState({
     name: "",
     brand: "",
-    type: "",
+    plastic: "",
     weight: "",
     condition: "",
     color: "",
+    stamp: "",
+    inked: false,
     for_sale: false,
     price: "",
   })
@@ -43,23 +48,47 @@ export default function AddDisc() {
     setError(null)
 
     try {
-      const { error } = await supabase.from("discs").insert({
-        user_id: user.id,
-        name: disc.name,
-        brand: disc.brand,
-        type: disc.type,
-        weight: disc.weight,
-        condition: disc.condition,
-        color: disc.color,
-        for_sale: disc.for_sale,
-        price: disc.for_sale && disc.price ? Number.parseFloat(disc.price) : null,
-      })
+      const { data, error } = await supabase
+        .from("discs")
+        .insert({
+          user_id: user.id,
+          name: disc.name,
+          brand: disc.brand,
+          plastic: disc.plastic,
+          weight: disc.weight,
+          condition: disc.condition,
+          color: disc.color,
+          stamp: disc.stamp,
+          inked: disc.inked,
+          for_sale: disc.for_sale,
+          price: disc.for_sale && disc.price ? Number.parseFloat(disc.price) : null,
+        })
+        .select()
 
       if (error) {
         throw error
       }
 
-      router.push("/")
+      // Set the disc ID for image uploads
+      if (data && data.length > 0) {
+        setDiscId(data[0].id)
+
+        // If there are uploaded images, associate them with the disc
+        if (uploadedImages.length > 0) {
+          const imageInserts = uploadedImages.map((path) => ({
+            disc_id: data[0].id,
+            storage_path: path,
+          }))
+
+          const { error: imageError } = await supabase.from("disc_images").insert(imageInserts)
+
+          if (imageError) {
+            console.error("Error saving image references:", imageError)
+          }
+        }
+
+        router.push("/")
+      }
     } catch (error) {
       console.error("Error adding disc:", error)
       setError("Failed to add disc. Please try again.")
@@ -75,6 +104,10 @@ export default function AddDisc() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }))
+  }
+
+  const handleImageUploaded = (path: string) => {
+    setUploadedImages((prev) => [...prev, path])
   }
 
   return (
@@ -109,12 +142,16 @@ export default function AddDisc() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="color">Color</Label>
-            <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
+            <Label htmlFor="plastic">Plastic</Label>
+            <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} required />
           </div>
           <div>
-            <Label htmlFor="type">Type</Label>
-            <Input type="text" id="type" name="type" value={disc.type} onChange={handleChange} required />
+            <Label htmlFor="stamp">Stamp</Label>
+            <Input type="text" id="stamp" name="stamp" value={disc.stamp} onChange={handleChange} />
+          </div>
+          <div>
+            <Label htmlFor="color">Color</Label>
+            <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
           </div>
           <div>
             <Label htmlFor="weight">Weight (g)</Label>
@@ -133,6 +170,15 @@ export default function AddDisc() {
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
+              id="inked"
+              name="inked"
+              checked={disc.inked}
+              onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, inked: checked as boolean }))}
+            />
+            <Label htmlFor="inked">Inked</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
               id="for_sale"
               name="for_sale"
               checked={disc.for_sale}
@@ -146,6 +192,22 @@ export default function AddDisc() {
               <Input type="number" id="price" name="price" value={disc.price} onChange={handleChange} step="0.01" />
             </div>
           )}
+
+          <div>
+            <Label>Disc Images</Label>
+            <p className="text-sm text-gray-500 mb-2">Upload images of your disc (up to 5)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[...Array(Math.min(5, uploadedImages.length + 1))].map((_, index) => (
+                <ImageUpload
+                  key={index}
+                  discId={discId || "temp"}
+                  onImageUploaded={handleImageUploaded}
+                  disabled={isSubmitting || index > uploadedImages.length}
+                />
+              ))}
+            </div>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Adding..." : "Add Disc"}
