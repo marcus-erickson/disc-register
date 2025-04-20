@@ -206,32 +206,11 @@ export default function ForSale() {
   const renderGridView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {filteredDiscs.map((disc) => (
-        <Card key={disc.id} className="overflow-hidden relative">
-          {/* Ellipsis menu in the top right corner */}
-          <div className="absolute top-2 right-2 z-10">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white bg-opacity-80">
-                  <MoreVertical className="h-4 w-4" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => router.push(`/edit-disc/${disc.id}`)}>
-                  <PencilIcon className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleDeleteClick(disc.id)}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Trash2Icon className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
+        <Card
+          key={disc.id}
+          className="overflow-hidden relative cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => router.push(`/discs/${disc.id}`)}
+        >
           <div className="p-3">
             {/* Image */}
             <div className="mb-3">
@@ -266,6 +245,31 @@ export default function ForSale() {
               )}
               <Badge className="bg-green-500 text-xs">${disc.price}</Badge>
             </div>
+          </div>
+
+          {/* Ellipsis menu in the top right corner - stop propagation to prevent navigation when clicking menu */}
+          <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white bg-opacity-80">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push(`/edit-disc/${disc.id}`)}>
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDeleteClick(disc.id)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2Icon className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </Card>
       ))}
@@ -309,7 +313,14 @@ export default function ForSale() {
                   </div>
                 )}
               </TableCell>
-              <TableCell className="font-medium">{disc.name}</TableCell>
+              <TableCell className="font-medium">
+                <button
+                  className="hover:underline text-left font-medium"
+                  onClick={() => router.push(`/discs/${disc.id}`)}
+                >
+                  {disc.name}
+                </button>
+              </TableCell>
               <TableCell>{disc.brand}</TableCell>
               <TableCell>{disc.plastic}</TableCell>
               <TableCell>{disc.weight}g</TableCell>

@@ -5,7 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 type AuthContextType = {
   user: User | null
@@ -32,31 +32,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     const setData = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession()
-      if (error) {
-        console.error(error)
-        setIsLoading(false)
-        return
-      }
+      try {
+        console.log(`AuthContext: Fetching session for path ${pathname}`)
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
 
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
+        if (error) {
+          console.error("AuthContext: Error getting session", error)
+          setIsLoading(false)
+          return
+        }
+
+        console.log(`AuthContext: Session fetched for path ${pathname}`, {
+          hasSession: !!session,
+          userId: session?.user?.id || "none",
+        })
+
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+      } catch (err) {
+        console.error(`AuthContext: Unexpected error for path ${pathname}`, err)
+        setIsLoading(false)
+      }
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log(`AuthContext: Auth state changed for path ${pathname}`, {
+        event: _event,
+        hasSession: !!session,
+        userId: session?.user?.id || "none",
+      })
+
       setSession(session)
       setUser(session?.user ?? null)
       setIsLoading(false)
-      router.refresh()
     })
 
     setData()
@@ -64,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe()
     }
-  }, [router])
+  }, [pathname])
 
   const signUp = async (email: string, password: string, name?: string) => {
     const { error } = await supabase.auth.signUp({
@@ -74,7 +92,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         data: {
           name: name || "",
         },
-        // Make sure we're not overriding any email redirect settings
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
@@ -86,21 +103,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
+    console.log("AuthContext: Signing in", { email })
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
+      console.error("AuthContext: Sign in error", error)
       throw error
     }
+
+    console.log("AuthContext: Sign in successful")
   }
 
   const signOut = async () => {
+    console.log("AuthContext: Signing out")
     const { error } = await supabase.auth.signOut()
     if (error) {
+      console.error("AuthContext: Sign out error", error)
       throw error
     }
+    console.log("AuthContext: Sign out successful")
     router.push("/login")
   }
 
@@ -122,6 +146,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return null
     }
   }
+
+  // Add debug output
+  useEffect(() => {
+    console.log(`AuthContext state for path ${pathname}:`, {
+      isLoading,
+      isAuthenticated: !!user,
+      userId: user?.id || "none",
+    })
+  }, [isLoading, user, pathname])
 
   const value = {
     user,

@@ -231,6 +231,7 @@ export default function EditDisc() {
                 name="brand"
                 value={disc.brand}
                 onValueChange={(value) => setDisc((prev) => ({ ...prev, brand: value }))}
+                required
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a brand" />
@@ -248,7 +249,7 @@ export default function EditDisc() {
             </div>
             <div>
               <Label htmlFor="plastic">Plastic</Label>
-              <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} required />
+              <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} />
             </div>
             <div>
               <Label htmlFor="stamp">Stamp</Label>
@@ -256,22 +257,15 @@ export default function EditDisc() {
             </div>
             <div>
               <Label htmlFor="color">Color</Label>
-              <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
+              <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} />
             </div>
             <div>
               <Label htmlFor="weight">Weight (g)</Label>
-              <Input type="number" id="weight" name="weight" value={disc.weight} onChange={handleChange} required />
+              <Input type="number" id="weight" name="weight" value={disc.weight} onChange={handleChange} />
             </div>
             <div>
               <Label htmlFor="condition">Condition</Label>
-              <Input
-                type="text"
-                id="condition"
-                name="condition"
-                value={disc.condition}
-                onChange={handleChange}
-                required
-              />
+              <Input type="text" id="condition" name="condition" value={disc.condition} onChange={handleChange} />
             </div>
             <div>
               <Label htmlFor="notes">Notes</Label>

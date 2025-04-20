@@ -40,6 +40,8 @@ export default function AddLostDisc() {
     state: "",
     country: "",
     description: "",
+    written_info: "",
+    phone_number: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +68,8 @@ export default function AddLostDisc() {
           state: disc.state,
           country: disc.country,
           description: disc.description,
+          written_info: disc.written_info,
+          phone_number: disc.phone_number,
           date_found: date.toISOString(),
         })
         .select()
@@ -156,6 +160,37 @@ export default function AddLostDisc() {
             <div>
               <Label htmlFor="color">Color</Label>
               <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Identifying Information</h3>
+
+              <div>
+                <Label htmlFor="written_info">Written Name/PDGA Number (if any)</Label>
+                <Input
+                  type="text"
+                  id="written_info"
+                  name="written_info"
+                  value={disc.written_info}
+                  onChange={handleChange}
+                  placeholder="e.g., 'John Smith' or 'PDGA #12345'"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone_number">Phone Number (if written on disc)</Label>
+                <Input
+                  type="text"
+                  id="phone_number"
+                  name="phone_number"
+                  value={disc.phone_number}
+                  onChange={handleChange}
+                  placeholder="e.g., '555-123-4567'"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This will only be shown on the details page, not in the list view
+                </p>
+              </div>
             </div>
 
             <div className="space-y-4">

@@ -2,6 +2,8 @@ import "./globals.css"
 import { Inter } from "next/font/google"
 import type React from "react"
 import { AuthProvider } from "./context/AuthContext"
+// Import the AuthDebug component
+// import { AuthDebug } from "@/components/auth-debug"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -11,6 +13,7 @@ export const metadata = {
     generator: 'v0.dev'
 }
 
+// Add it to the layout
 export default function RootLayout({
   children,
 }: {

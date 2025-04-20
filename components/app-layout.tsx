@@ -5,6 +5,7 @@ import { SidebarNav } from "./sidebar-nav"
 import { useAuth } from "@/app/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useEffect } from "react"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -12,6 +13,11 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth()
+
+  // Add debug output
+  useEffect(() => {
+    console.log("AppLayout rendered with auth state:", { isAuthenticated: !!user })
+  }, [user])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -32,7 +38,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r p-4 hidden md:block">
+        <aside className="w-72 bg-white border-r p-4 hidden md:block">
           <SidebarNav />
 
           <div className="mt-8 pt-4 border-t">

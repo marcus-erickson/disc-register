@@ -33,6 +33,7 @@ export default function Login() {
     }
   }, [])
 
+  // Update the handleSubmit function to properly save the email to localStorage
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
