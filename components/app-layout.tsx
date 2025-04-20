@@ -5,19 +5,37 @@ import { SidebarNav } from "./sidebar-nav"
 import { useAuth } from "@/app/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface AppLayoutProps {
   children: ReactNode
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, signOut } = useAuth()
+  const { user, signOut, getUserProfile } = useAuth()
+  const [userName, setUserName] = useState<string>("")
 
   // Add debug output
   useEffect(() => {
     console.log("AppLayout rendered with auth state:", { isAuthenticated: !!user })
   }, [user])
+
+  // Fetch user profile to get name
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        const profile = await getUserProfile()
+        if (profile) {
+          setUserName(profile.name || user.email?.split("@")[0] || "")
+        } else {
+          // Fallback to email username if profile not available
+          setUserName(user.email?.split("@")[0] || "")
+        }
+      }
+    }
+
+    fetchUserProfile()
+  }, [user, getUserProfile])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -27,8 +45,12 @@ export function AppLayout({ children }: AppLayoutProps) {
           <h1 className="text-2xl font-bold">Disc Register</h1>
           {user && (
             <div className="flex items-center gap-4">
-              <span className="hidden md:inline">{user.email}</span>
-              <Button variant="outline" className="text-white border-white hover:bg-green-700" onClick={signOut}>
+              <span className="hidden md:inline">{userName ? `Hello, ${userName}` : "Welcome"}</span>
+              <Button
+                variant="outline"
+                className="text-green-600 bg-white border-white hover:bg-green-700 hover:text-white"
+                onClick={signOut}
+              >
                 Logout
               </Button>
             </div>
