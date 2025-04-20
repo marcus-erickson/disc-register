@@ -7,7 +7,6 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "@/lib/supabase"
@@ -19,13 +18,19 @@ import ImageGallery from "@/components/image-gallery"
 import { Trash2 } from "lucide-react"
 import { deleteImage } from "@/lib/storage-utils"
 import { Toaster } from "@/components/ui/toaster"
+import { toast } from "@/components/ui/use-toast"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface DiscImage {
   id: string
   storage_path: string
 }
 
-export default function EditDisc() {
+export default function EditLostDisc() {
   const router = useRouter()
   const params = useParams()
   const discId = params.id as string
@@ -36,19 +41,18 @@ export default function EditDisc() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [existingImages, setExistingImages] = useState<DiscImage[]>([])
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
+  const [date, setDate] = useState<Date>(new Date())
 
   const [disc, setDisc] = useState({
-    name: "",
     brand: "",
-    plastic: "",
-    weight: "",
-    condition: "",
+    name: "",
     color: "",
-    stamp: "",
-    notes: "",
-    inked: false,
-    for_sale: false,
-    price: "",
+    location: "",
+    city: "",
+    state: "",
+    country: "",
+    description: "",
+    user_id: "",
   })
 
   useEffect(() => {
@@ -58,50 +62,61 @@ export default function EditDisc() {
       try {
         setIsLoading(true)
         // Fetch disc data
-        const { data: discData, error: discError } = await supabase.from("discs").select("*").eq("id", discId).single()
+        const { data: discData, error: discError } = await supabase
+          .from("lost_discs")
+          .select("*")
+          .eq("id", discId)
+          .single()
 
         if (discError) {
           throw discError
         }
 
         if (!discData) {
-          router.push("/")
+          router.push("/lost-and-found")
           return
         }
 
         // Check if the disc belongs to the current user
         if (discData.user_id !== user.id) {
-          router.push("/")
+          toast({
+            title: "Access Denied",
+            description: "You can only edit lost discs that you reported.",
+            variant: "destructive",
+          })
+          router.push("/lost-and-found")
           return
         }
 
         // Fetch disc images
         const { data: imagesData, error: imagesError } = await supabase
-          .from("disc_images")
+          .from("lost_disc_images")
           .select("id, storage_path")
-          .eq("disc_id", discId)
+          .eq("lost_disc_id", discId)
 
         if (imagesError) {
           console.error("Error fetching images:", imagesError)
         }
 
         setDisc({
-          name: discData.name || "",
           brand: discData.brand || "",
-          plastic: discData.plastic || "",
-          weight: discData.weight || "",
-          condition: discData.condition || "",
+          name: discData.name || "",
           color: discData.color || "",
-          stamp: discData.stamp || "",
-          notes: discData.notes || "",
-          inked: discData.inked || false,
-          for_sale: discData.for_sale || false,
-          price: discData.price ? discData.price.toString() : "",
+          location: discData.location || "",
+          city: discData.city || "",
+          state: discData.state || "",
+          country: discData.country || "",
+          description: discData.description || "",
+          user_id: discData.user_id,
         })
+
+        if (discData.date_found) {
+          setDate(new Date(discData.date_found))
+        }
 
         setExistingImages(imagesData || [])
       } catch (error) {
-        console.error("Error fetching disc:", error)
+        console.error("Error fetching lost disc:", error)
         setError("Failed to load disc data. Please try again.")
       } finally {
         setIsLoading(false)
@@ -115,7 +130,13 @@ export default function EditDisc() {
     e.preventDefault()
 
     if (!user) {
-      setError("You must be logged in to edit a disc")
+      setError("You must be logged in to edit a lost disc")
+      return
+    }
+
+    // Check if the disc belongs to the current user
+    if (disc.user_id !== user.id) {
+      setError("You can only edit your own lost discs")
       return
     }
 
@@ -125,19 +146,18 @@ export default function EditDisc() {
     try {
       // Update disc data
       const { error: updateError } = await supabase
-        .from("discs")
+        .from("lost_discs")
         .update({
-          name: disc.name,
           brand: disc.brand,
-          plastic: disc.plastic,
-          weight: disc.weight,
-          condition: disc.condition,
+          name: disc.name,
           color: disc.color,
-          stamp: disc.stamp,
-          notes: disc.notes,
-          inked: disc.inked,
-          for_sale: disc.for_sale,
-          price: disc.for_sale && disc.price ? Number.parseFloat(disc.price) : null,
+          location: disc.location,
+          city: disc.city,
+          state: disc.state,
+          country: disc.country,
+          description: disc.description,
+          date_found: date.toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq("id", discId)
 
@@ -153,7 +173,7 @@ export default function EditDisc() {
           await deleteImage(imageToDelete.storage_path)
 
           // Delete from database
-          const { error: deleteError } = await supabase.from("disc_images").delete().eq("id", imageId)
+          const { error: deleteError } = await supabase.from("lost_disc_images").delete().eq("id", imageId)
 
           if (deleteError) {
             console.error("Error deleting image:", deleteError)
@@ -164,32 +184,36 @@ export default function EditDisc() {
       // Add new images
       if (uploadedImages.length > 0) {
         const imageInserts = uploadedImages.map((path) => ({
-          disc_id: discId,
+          lost_disc_id: discId,
           storage_path: path,
         }))
 
-        const { error: imageError } = await supabase.from("disc_images").insert(imageInserts)
+        const { error: imageError } = await supabase.from("lost_disc_images").insert(imageInserts)
 
         if (imageError) {
           console.error("Error saving image references:", imageError)
         }
       }
 
-      router.push("/")
+      toast({
+        title: "Success",
+        description: "Lost disc updated successfully",
+      })
+
+      router.push("/lost-and-found")
     } catch (error) {
-      console.error("Error updating disc:", error)
-      setError("Failed to update disc. Please try again.")
+      console.error("Error updating lost disc:", error)
+      setError("Failed to update lost disc. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement
-    const checked = (e.target as HTMLInputElement).checked
+    const { name, value } = e.target
     setDisc((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }))
   }
 
@@ -207,7 +231,7 @@ export default function EditDisc() {
       <ProtectedRoute>
         <AppLayout>
           <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
+            <h1 className="text-3xl font-bold mb-4">Edit Lost Disc</h1>
             <p>Loading disc data...</p>
           </div>
         </AppLayout>
@@ -219,18 +243,15 @@ export default function EditDisc() {
     <ProtectedRoute>
       <AppLayout>
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
+          <h1 className="text-3xl font-bold mb-4">Edit Lost Disc</h1>
           <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-            <div>
-              <Label htmlFor="name">Disc Name</Label>
-              <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
-            </div>
             <div>
               <Label htmlFor="brand">Brand</Label>
               <Select
                 name="brand"
                 value={disc.brand}
                 onValueChange={(value) => setDisc((prev) => ({ ...prev, brand: value }))}
+                required
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a brand" />
@@ -246,68 +267,72 @@ export default function EditDisc() {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
-              <Label htmlFor="plastic">Plastic</Label>
-              <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} required />
+              <Label htmlFor="name">Disc Name</Label>
+              <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
             </div>
-            <div>
-              <Label htmlFor="stamp">Stamp</Label>
-              <Input type="text" id="stamp" name="stamp" value={disc.stamp} onChange={handleChange} />
-            </div>
+
             <div>
               <Label htmlFor="color">Color</Label>
               <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
             </div>
-            <div>
-              <Label htmlFor="weight">Weight (g)</Label>
-              <Input type="number" id="weight" name="weight" value={disc.weight} onChange={handleChange} required />
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Location Information</h3>
+
+              <div>
+                <Label htmlFor="location">Course/Park Name</Label>
+                <Input type="text" id="location" name="location" value={disc.location} onChange={handleChange} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input type="text" id="city" name="city" value={disc.city} onChange={handleChange} />
+                </div>
+
+                <div>
+                  <Label htmlFor="state">State/Province</Label>
+                  <Input type="text" id="state" name="state" value={disc.state} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input type="text" id="country" name="country" value={disc.country} onChange={handleChange} />
+              </div>
             </div>
+
             <div>
-              <Label htmlFor="condition">Condition</Label>
-              <Input
-                type="text"
-                id="condition"
-                name="condition"
-                value={disc.condition}
-                onChange={handleChange}
-                required
-              />
+              <Label>Date Found</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={date} onSelect={(date) => date && setDate(date)} initialFocus />
+                </PopoverContent>
+              </Popover>
             </div>
+
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
-                id="notes"
-                name="notes"
-                value={disc.notes}
+                id="description"
+                name="description"
+                value={disc.description}
                 onChange={handleChange}
-                placeholder="Any additional notes about this disc..."
+                placeholder="Any additional details about the disc..."
                 className="min-h-[100px]"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="inked"
-                name="inked"
-                checked={disc.inked}
-                onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, inked: checked as boolean }))}
-              />
-              <Label htmlFor="inked">Inked</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="for_sale"
-                name="for_sale"
-                checked={disc.for_sale}
-                onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, for_sale: checked as boolean }))}
-              />
-              <Label htmlFor="for_sale">For Sale</Label>
-            </div>
-            {disc.for_sale && (
-              <div>
-                <Label htmlFor="price">Price ($)</Label>
-                <Input type="number" id="price" name="price" value={disc.price} onChange={handleChange} step="0.01" />
-              </div>
-            )}
 
             <div>
               <Label>Current Images</Label>
@@ -357,10 +382,10 @@ export default function EditDisc() {
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <div className="flex gap-4">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/")}>
+              <Button type="button" variant="outline" onClick={() => router.push("/lost-and-found")}>
                 Cancel
               </Button>
             </div>

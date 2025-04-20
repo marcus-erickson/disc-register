@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Disc, Search } from "lucide-react"
 
 interface SidebarNavProps {
   className?: string
@@ -15,17 +16,19 @@ export function SidebarNav({ className }: SidebarNavProps) {
     {
       title: "My Discs",
       href: "/",
+      icon: <Disc className="h-4 w-4 mr-2" />,
     },
     {
       title: "Lost and Found",
       href: "/lost-and-found",
+      icon: <Search className="h-4 w-4 mr-2" />,
     },
   ]
 
   return (
     <nav className={cn("flex flex-col space-y-1", className)}>
       {navItems.map((item) => {
-        const isActive = pathname === item.href
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
         return (
           <Link
@@ -36,6 +39,7 @@ export function SidebarNav({ className }: SidebarNavProps) {
               isActive ? "bg-green-100 text-green-800" : "text-gray-700 hover:bg-gray-100",
             )}
           >
+            {item.icon}
             {item.title}
           </Link>
         )

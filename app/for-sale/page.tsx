@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "../context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { PencilIcon, Trash2Icon } from "lucide-react"
+import { PencilIcon, Trash2Icon, MoreVertical } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
@@ -18,6 +18,7 @@ import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import DiscFilters from "@/components/disc-filters"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface Disc {
   id: string
@@ -205,7 +206,32 @@ export default function ForSale() {
   const renderGridView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {filteredDiscs.map((disc) => (
-        <Card key={disc.id} className="overflow-hidden">
+        <Card key={disc.id} className="overflow-hidden relative">
+          {/* Ellipsis menu in the top right corner */}
+          <div className="absolute top-2 right-2 z-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white bg-opacity-80">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push(`/edit-disc/${disc.id}`)}>
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleDeleteClick(disc.id)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2Icon className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <div className="p-3">
             {/* Image */}
             <div className="mb-3">
@@ -225,10 +251,9 @@ export default function ForSale() {
               )}
             </div>
 
-            {/* Main disc info - without labels */}
-            <h3 className="text-lg font-bold truncate">{disc.name}</h3>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">{disc.brand}</span>
+            {/* Main disc info - Brand Name format */}
+            <h3 className="text-lg font-bold truncate">{`${disc.brand} ${disc.name}`}</h3>
+            <div className="flex justify-end items-center mb-2">
               <span className="text-sm font-medium">{disc.weight}g</span>
             </div>
 
@@ -240,26 +265,6 @@ export default function ForSale() {
                 </Badge>
               )}
               <Badge className="bg-green-500 text-xs">${disc.price}</Badge>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => router.push(`/edit-disc/${disc.id}`)}
-              >
-                <PencilIcon className="h-4 w-4 mr-2" /> Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => handleDeleteClick(disc.id)}
-              >
-                <Trash2Icon className="h-4 w-4 mr-2" /> Delete
-              </Button>
             </div>
           </div>
         </Card>
