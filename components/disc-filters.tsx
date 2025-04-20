@@ -47,7 +47,7 @@ export default function DiscFilters({ discs, onFilterChange, currentFilters }: D
             <SelectValue placeholder="Filter by name" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Names</SelectItem>
+            <SelectItem value="all">All Molds</SelectItem>
             {uniqueNames.map((name) => (
               <SelectItem key={name} value={name}>
                 {name}

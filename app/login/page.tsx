@@ -26,24 +26,32 @@ export default function Login() {
 
   // Load saved email from localStorage on component mount
   useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberedEmail")
+    // Use a consistent key for localStorage
+    const savedEmail = localStorage.getItem("discRegister_rememberedEmail")
+
     if (savedEmail) {
+      console.log("Found saved email:", savedEmail)
       setEmail(savedEmail)
       setRememberMe(true)
+    } else {
+      console.log("No saved email found")
     }
   }, [])
 
-  // Update the handleSubmit function to properly save the email to localStorage
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
 
+    console.log("Form submitted, rememberMe:", rememberMe)
+
     // Save or remove email from localStorage based on rememberMe
     if (rememberMe) {
-      localStorage.setItem("rememberedEmail", email)
+      console.log("Saving email to localStorage:", email)
+      localStorage.setItem("discRegister_rememberedEmail", email)
     } else {
-      localStorage.removeItem("rememberedEmail")
+      console.log("Removing email from localStorage")
+      localStorage.removeItem("discRegister_rememberedEmail")
     }
 
     try {
@@ -103,9 +111,13 @@ export default function Login() {
               <Checkbox
                 id="remember-me"
                 checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                onCheckedChange={(checked) => {
+                  const newValue = checked === true
+                  console.log("Remember me changed:", newValue)
+                  setRememberMe(newValue)
+                }}
               />
-              <Label htmlFor="remember-me" className="text-sm">
+              <Label htmlFor="remember-me" className="text-sm cursor-pointer">
                 Remember my email
               </Label>
             </div>

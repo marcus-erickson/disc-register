@@ -227,7 +227,7 @@ export default function DiscDetails() {
                         <p className="font-medium">{formatBrandName(disc.brand)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Name</p>
+                        <p className="text-sm text-gray-500">Mold</p>
                         <p className="font-medium">{disc.name}</p>
                       </div>
                       <div>
@@ -260,7 +260,13 @@ export default function DiscDetails() {
                   <div>
                     <h3 className="text-lg font-medium mb-2">Status</h3>
                     <div className="flex flex-wrap gap-2">
-                      {disc.inked && <Badge variant="outline">Inked</Badge>}
+                      {disc.inked ? (
+                        <Badge variant="outline">Inked</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          No Ink
+                        </Badge>
+                      )}
                       {disc.for_sale && <Badge className="bg-green-500">${disc.price}</Badge>}
                     </div>
                   </div>

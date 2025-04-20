@@ -204,18 +204,18 @@ export default function Home() {
   }
 
   const renderGridView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {filteredDiscs.map((disc) => (
         <Card
           key={disc.id}
           className="overflow-hidden relative cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => router.push(`/discs/${disc.id}`)}
         >
-          <div className="p-3">
-            {/* Image */}
-            <div className="mb-3">
+          <div className="p-2">
+            {/* Image - reduced height by ~33% */}
+            <div className="mb-2 relative">
               {disc.images && disc.images.length > 0 ? (
-                <div className="relative w-full h-32 bg-gray-100 rounded-md overflow-hidden">
+                <div className="relative w-full h-20 bg-gray-100 rounded-md overflow-hidden">
                   <Image
                     src={imageUrls[disc.id] || "/placeholder.svg"}
                     alt={disc.name}
@@ -224,35 +224,43 @@ export default function Home() {
                   />
                 </div>
               ) : (
-                <div className="w-full h-32 bg-gray-100 rounded-md flex items-center justify-center">
+                <div className="w-full h-20 bg-gray-100 rounded-md flex items-center justify-center">
                   <span className="text-xs text-gray-400">No image</span>
+                </div>
+              )}
+
+              {/* For sale badge - moved to top left corner of image */}
+              {disc.for_sale && (
+                <div className="absolute top-1 left-1 z-10">
+                  <Badge className="bg-green-500 text-xs">${disc.price}</Badge>
                 </div>
               )}
             </div>
 
-            {/* Main disc info - Brand Name format */}
-            <h3 className="text-lg font-bold truncate">{`${formatBrandName(disc.brand)} ${disc.name}`}</h3>
-            <div className="flex justify-end items-center mb-2">
-              <span className="text-sm font-medium">{disc.weight}g</span>
+            {/* Main disc info - smaller text */}
+            <div className="space-y-0.5 mb-1">
+              <p className="text-sm truncate">{formatBrandName(disc.brand)}</p>
+              <p className="text-sm truncate">
+                {disc.name} • {disc.weight}g
+              </p>
             </div>
 
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Badges - only show inked badge now */}
+            <div className="flex flex-wrap gap-2 mb-1">
               {disc.inked && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs py-0 px-1.5">
                   Inked
                 </Badge>
               )}
-              {disc.for_sale && <Badge className="bg-green-500 text-xs">${disc.price}</Badge>}
             </div>
           </div>
 
           {/* Ellipsis menu in the top right corner - stop propagation to prevent navigation when clicking menu */}
-          <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-1 right-1 z-10" onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white bg-opacity-80">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-white bg-opacity-80">
+                  <MoreVertical className="h-3 w-3" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </DropdownMenuTrigger>

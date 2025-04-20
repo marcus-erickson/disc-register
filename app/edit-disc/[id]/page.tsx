@@ -222,10 +222,6 @@ export default function EditDisc() {
           <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
           <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
             <div>
-              <Label htmlFor="name">Disc Name</Label>
-              <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
-            </div>
-            <div>
               <Label htmlFor="brand">Brand</Label>
               <Select
                 name="brand"
@@ -246,6 +242,10 @@ export default function EditDisc() {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="name">Mold</Label>
+              <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
             </div>
             <div>
               <Label htmlFor="plastic">Plastic</Label>

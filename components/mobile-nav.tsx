@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Disc, Search, PlusCircle, Home } from "lucide-react"
+import { Menu, Disc, Search, PlusCircle, Home, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function MobileNav() {
@@ -42,6 +42,11 @@ export function MobileNav() {
       title: "Report Lost Disc",
       href: "/report-lost-disc",
       icon: <PlusCircle className="h-5 w-5 mr-2" />,
+    },
+    {
+      title: "Profile Settings",
+      href: "/profile",
+      icon: <User className="h-5 w-5 mr-2" />,
     },
   ]
 

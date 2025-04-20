@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { MobileNav } from "./mobile-nav"
+import { User } from "lucide-react"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -49,7 +50,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
           {user && (
             <div className="flex items-center gap-4">
-              <span className="hidden md:inline">{userName || "Welcome"}</span>
+              <Link href="/profile" className="hidden md:flex items-center gap-2 text-white hover:text-green-100">
+                <User className="h-4 w-4" />
+                <span>{userName || "Profile"}</span>
+              </Link>
               <Button
                 variant="outline"
                 className="text-green-600 bg-white border-white hover:bg-green-700 hover:text-white"

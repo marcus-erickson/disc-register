@@ -275,7 +275,7 @@ export default function EditLostDisc() {
             </div>
 
             <div>
-              <Label htmlFor="name">Disc Name</Label>
+              <Label htmlFor="name">Mold</Label>
               <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
             </div>
 

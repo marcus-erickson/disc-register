@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatBrandName } from "@/lib/format-utils"
+import { getUserDisplayName } from "@/lib/user-utils"
 
 interface LostDisc {
   id: string
@@ -39,7 +40,7 @@ interface LostDisc {
   date_found: string
   created_at: string
   updated_at: string
-  user_email?: string
+  finder_name?: string
   images?: string[]
 }
 
@@ -88,7 +89,7 @@ export default function LostAndFound() {
       setLoading(true)
       console.log("Fetching lost discs...")
 
-      // Fetch lost discs without the relationship query
+      // Fetch lost discs
       const { data: discsData, error: discsError } = await supabase
         .from("lost_discs")
         .select("*")
@@ -100,26 +101,16 @@ export default function LostAndFound() {
 
       console.log(`Fetched ${discsData?.length || 0} lost discs`)
 
-      // Fetch user emails separately
-      const userIds = [...new Set((discsData || []).map((disc: any) => disc.user_id))]
-      const userEmails: Record<string, string> = {}
-
-      // Only fetch user emails if there are discs
-      if (userIds.length > 0) {
-        const { data: userData, error: userError } = await supabase.from("users").select("id, email").in("id", userIds)
-
-        if (!userError && userData) {
-          userData.forEach((user: any) => {
-            userEmails[user.id] = user.email
-          })
-        }
-      }
-
-      // Add user emails to disc data
-      const processedDiscs = (discsData || []).map((disc: any) => ({
-        ...disc,
-        user_email: userEmails[disc.user_id] || "Unknown",
-      }))
+      // Process discs with finder names
+      const processedDiscs = await Promise.all(
+        (discsData || []).map(async (disc: any) => {
+          const finderName = await getUserDisplayName(disc.user_id)
+          return {
+            ...disc,
+            finder_name: finderName,
+          }
+        }),
+      )
 
       // Fetch images for each disc
       const discsWithImages = await Promise.all(
@@ -185,7 +176,8 @@ export default function LostAndFound() {
       (disc) =>
         disc.brand.toLowerCase().includes(query) ||
         disc.name.toLowerCase().includes(query) ||
-        (disc.written_info && disc.written_info.toLowerCase().includes(query)),
+        (disc.written_info && disc.written_info.toLowerCase().includes(query)) ||
+        (disc.finder_name && disc.finder_name.toLowerCase().includes(query)),
     )
     setFilteredDiscs(filtered)
   }, [discs, searchQuery])
@@ -297,10 +289,13 @@ export default function LostAndFound() {
             {disc.written_info && <div className="text-sm text-gray-600 mb-2 italic">"{disc.written_info}"</div>}
 
             {/* Date found */}
-            <div className="flex items-center text-sm text-gray-600 mb-3">
+            <div className="flex items-center text-sm text-gray-600 mb-1">
               <CalendarIcon className="h-4 w-4 mr-1 flex-shrink-0" />
               <span>Found: {formatDate(disc.date_found)}</span>
             </div>
+
+            {/* Found by */}
+            <div className="text-xs text-gray-600 mb-3">Found by: {disc.finder_name || "Unknown"}</div>
 
             {/* View details button */}
             <Button
@@ -331,6 +326,7 @@ export default function LostAndFound() {
             <TableHead>Color</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Date Found</TableHead>
+            <TableHead>Found By</TableHead>
             <TableHead>Written Info</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -366,6 +362,7 @@ export default function LostAndFound() {
               <TableCell>{disc.color}</TableCell>
               <TableCell>{formatLocation(disc)}</TableCell>
               <TableCell>{formatDate(disc.date_found)}</TableCell>
+              <TableCell>{disc.finder_name || "Unknown"}</TableCell>
               <TableCell>{disc.written_info || "-"}</TableCell>
               <TableCell className="text-right">
                 <Button
@@ -418,14 +415,14 @@ export default function LostAndFound() {
             </div>
           </div>
 
-          {/* Search bar - changed from type="search" to type="text" */}
+          {/* Search bar */}
           <div className="relative mb-4">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
             </div>
             <Input
               type="text"
-              placeholder="Search by brand, name, or written info..."
+              placeholder="Search by brand, mold or owner..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="pl-10 w-full"

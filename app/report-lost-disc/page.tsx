@@ -56,10 +56,11 @@ export default function ReportLostDisc() {
     setError(null)
 
     try {
+      // Save the current user as the person who found the disc
       const { data, error } = await supabase
         .from("lost_discs")
         .insert({
-          user_id: user.id,
+          user_id: user.id, // This records who found the disc
           brand: disc.brand,
           name: disc.name,
           color: disc.color,
@@ -153,7 +154,7 @@ export default function ReportLostDisc() {
             </div>
 
             <div>
-              <Label htmlFor="name">Disc Name</Label>
+              <Label htmlFor="name">Mold</Label>
               <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
             </div>
 

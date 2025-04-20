@@ -17,6 +17,7 @@ import { format } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { notFound } from "next/navigation"
 import { formatBrandName } from "@/lib/format-utils"
+import { getUserDisplayName } from "@/lib/user-utils"
 
 interface LostDisc {
   id: string
@@ -34,7 +35,7 @@ interface LostDisc {
   date_found: string
   created_at: string
   updated_at: string
-  user_email?: string
+  finder_name?: string
   images?: string[]
 }
 
@@ -98,17 +99,8 @@ export default function LostDiscDetails() {
           return
         }
 
-        // Fetch user email
-        let userEmail = "Unknown"
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("email")
-          .eq("id", discData.user_id)
-          .single()
-
-        if (!userError && userData) {
-          userEmail = userData.email
-        }
+        // Get finder's display name
+        const finderName = await getUserDisplayName(discData.user_id)
 
         // Fetch disc images
         const { data: imagesData, error: imagesError } = await supabase
@@ -122,7 +114,7 @@ export default function LostDiscDetails() {
 
         setDisc({
           ...discData,
-          user_email: userEmail,
+          finder_name: finderName,
           images: imagesData ? imagesData.map((img) => img.storage_path) : [],
         })
       } catch (error) {
@@ -193,8 +185,8 @@ export default function LostDiscDetails() {
         body: {
           discId: disc.id,
           discName: `${disc.brand} ${disc.name}`,
-          ownerEmail: disc.user_email,
-          claimerEmail: user.email,
+          ownerId: user.id,
+          finderId: disc.user_id,
         },
       })
 
@@ -326,7 +318,7 @@ export default function LostDiscDetails() {
                         <p className="font-medium">{formatBrandName(disc.brand)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Name</p>
+                        <p className="text-sm text-gray-500">Mold</p>
                         <p className="font-medium">{disc.name}</p>
                       </div>
                       <div>
@@ -395,8 +387,9 @@ export default function LostDiscDetails() {
                   <div>
                     <h3 className="text-lg font-medium mb-2">Contact Information</h3>
                     <p className="text-sm">
-                      This disc was reported by <span className="font-medium">{disc.user_email}</span>
+                      Found by <span className="font-medium">{disc.finder_name}</span>
                     </p>
+                    <p className="text-sm text-gray-500 mt-1">Reported on {formatDate(disc.created_at)}</p>
                     <Button onClick={handleClaimClick} className="mt-4 w-full bg-green-600 hover:bg-green-700">
                       Claim This Disc
                     </Button>
