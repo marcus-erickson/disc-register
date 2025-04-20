@@ -24,6 +24,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatBrandName } from "@/lib/format-utils"
 import { getUserDisplayName } from "@/lib/user-utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 interface LostDisc {
   id: string
@@ -55,6 +57,10 @@ export default function LostAndFound() {
   const [discToDelete, setDiscToDelete] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [claimDialogOpen, setClaimDialogOpen] = useState(false)
+  const [discToClaim, setDiscToClaim] = useState<LostDisc | null>(null)
+  const [claimMessage, setClaimMessage] = useState("")
+  const [claimSubmitting, setClaimSubmitting] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
 
@@ -274,6 +280,65 @@ export default function LostAndFound() {
     setDiscToDelete(null)
   }
 
+  const handleClaimClick = (disc: LostDisc, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent navigation to details page
+    setDiscToClaim(disc)
+    setClaimMessage("")
+    setClaimDialogOpen(true)
+  }
+
+  const handleClaimConfirm = async () => {
+    if (!discToClaim || !user) return
+
+    try {
+      setClaimSubmitting(true)
+
+      // Insert claim record
+      const { error } = await supabase.from("disc_claims").insert({
+        lost_disc_id: discToClaim.id,
+        claimer_id: user.id,
+        finder_id: discToClaim.user_id,
+        message: claimMessage,
+        status: "pending",
+      })
+
+      if (error) {
+        if (error.code === "23505") {
+          // Unique violation
+          toast({
+            title: "Already Claimed",
+            description: "You have already submitted a claim for this disc.",
+          })
+        } else {
+          throw error
+        }
+      } else {
+        toast({
+          title: "Claim Submitted",
+          description: "Your claim has been submitted. The finder will review your claim.",
+        })
+      }
+    } catch (error) {
+      console.error("Error claiming disc:", error)
+      toast({
+        title: "Error",
+        description: "Failed to submit claim. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setClaimSubmitting(false)
+      setClaimDialogOpen(false)
+      setDiscToClaim(null)
+      setClaimMessage("")
+    }
+  }
+
+  const handleClaimCancel = () => {
+    setClaimDialogOpen(false)
+    setDiscToClaim(null)
+    setClaimMessage("")
+  }
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM d, yyyy")
@@ -333,18 +398,27 @@ export default function LostAndFound() {
             {/* Found by */}
             <div className="text-xs text-gray-600 mb-3">Found by: {disc.finder_name || "Unknown"}</div>
 
-            {/* View details button */}
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center gap-1"
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`/lost-discs/${disc.id}`)
-              }}
-            >
-              <ExternalLinkIcon className="h-4 w-4" />
-              View Details
-            </Button>
+            {/* Two buttons: View and Claim */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 flex items-center justify-center gap-1"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push(`/lost-discs/${disc.id}`)
+                }}
+              >
+                <ExternalLinkIcon className="h-4 w-4" />
+                View
+              </Button>
+              <Button
+                variant="default"
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                onClick={(e) => handleClaimClick(disc, e)}
+              >
+                Claim
+              </Button>
+            </div>
           </div>
         </Card>
       ))}
@@ -405,6 +479,17 @@ export default function LostAndFound() {
                   >
                     <ExternalLinkIcon className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleClaimClick(disc, e)
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Claim
+                  </Button>
                   {canEditDisc(disc) && (
                     <>
                       <Button
@@ -435,6 +520,28 @@ export default function LostAndFound() {
       </Table>
     </div>
   )
+
+  // Custom claim dialog description with message input
+  const getClaimDialogDescription = () => {
+    return (
+      <div>
+        <div className="mb-4">Is this your disc? Submit a claim to contact the person who found it.</div>
+        <div className="mb-4">
+          <Label htmlFor="claimMessage" className="block mb-2">
+            Message to the finder (optional):
+          </Label>
+          <Textarea
+            id="claimMessage"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            rows={3}
+            placeholder="Describe why you believe this is your disc..."
+            value={claimMessage}
+            onChange={(e) => setClaimMessage(e.target.value)}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <ProtectedRoute>
@@ -508,6 +615,7 @@ export default function LostAndFound() {
           )}
         </div>
 
+        {/* Delete Confirmation Dialog */}
         <ConfirmationDialog
           isOpen={deleteDialogOpen}
           onClose={handleDeleteCancel}
@@ -516,6 +624,17 @@ export default function LostAndFound() {
           description="Are you sure you want to delete this lost disc? This action cannot be undone."
           confirmText="Yes"
           cancelText="No"
+        />
+
+        {/* Claim Dialog */}
+        <ConfirmationDialog
+          isOpen={claimDialogOpen}
+          onClose={handleClaimCancel}
+          onConfirm={handleClaimConfirm}
+          title="Claim This Disc"
+          description={getClaimDialogDescription()}
+          confirmText={claimSubmitting ? "Submitting..." : "Submit Claim"}
+          cancelText="Cancel"
         />
 
         <Toaster />
