@@ -74,10 +74,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         data: {
           name: name || "",
         },
+        // Make sure we're not overriding any email redirect settings
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
 
     if (error) {
+      console.error("Signup error:", error)
       throw error
     }
   }
