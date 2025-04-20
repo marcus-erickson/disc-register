@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Loader2 } from "lucide-react"
+import { Mic, MicOff, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { processVoiceInput } from "@/app/actions/process-voice-input"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 interface VoiceInputProps {
   onResult: (result: {
@@ -39,7 +40,7 @@ declare global {
   }
 }
 
-// Add this mapping function after the imports but before the VoiceInput component
+// Brand mapping function
 function mapBrandToDropdownValue(brand: string | undefined): string | undefined {
   if (!brand) return undefined
 
@@ -92,6 +93,7 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
   const [fullTranscript, setFullTranscript] = useState("") // Track the full transcript across pauses
   const [error, setError] = useState<string | null>(null)
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false) // State for collapsible
 
   // Initialize speech recognition
   useEffect(() => {
@@ -171,6 +173,9 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
       setError(null)
       recognition.start()
       setIsListening(true)
+
+      // Auto-open the transcript when starting to listen
+      setIsTranscriptOpen(true)
     }
   }, [isListening, recognition, transcript, fullTranscript])
 
@@ -221,6 +226,9 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
     }
   }
 
+  // Determine if we should show the transcript section
+  const hasTranscriptContent = transcript || fullTranscript
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -252,13 +260,22 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
         {isListening && <span className="text-sm text-red-600 animate-pulse">Listening...</span>}
       </div>
 
-      {(transcript || fullTranscript) && (
-        <div className="p-3 bg-gray-50 rounded-md text-sm">
-          <p className="font-medium mb-1">Transcript:</p>
-          <p className="italic">
-            {fullTranscript} {transcript}
-          </p>
-        </div>
+      {hasTranscriptContent && (
+        <Collapsible open={isTranscriptOpen} onOpenChange={setIsTranscriptOpen} className="border rounded-md">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex w-full justify-between p-2">
+              <span className="text-sm font-medium">Transcript {isTranscriptOpen ? "▲" : "▼"}</span>
+              {isTranscriptOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-3 bg-gray-50 text-sm">
+              <p className="italic">
+                {fullTranscript} {transcript}
+              </p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {error && (

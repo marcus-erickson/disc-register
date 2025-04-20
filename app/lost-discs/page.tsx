@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/app/context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, ExternalLinkIcon, Search, X } from "lucide-react"
+import { CalendarIcon, ExternalLinkIcon, Search, X, AlertTriangle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
@@ -23,6 +23,7 @@ import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatBrandName } from "@/lib/format-utils"
 import { getUserDisplayName } from "@/lib/user-utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface LostDisc {
   id: string
@@ -53,6 +54,7 @@ export default function LostAndFound() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [discToDelete, setDiscToDelete] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const { user } = useAuth()
   const router = useRouter()
 
@@ -87,6 +89,7 @@ export default function LostAndFound() {
   const fetchDiscs = async () => {
     try {
       setLoading(true)
+      setFetchError(null)
       console.log("Fetching lost discs...")
 
       // Fetch lost discs
@@ -96,18 +99,41 @@ export default function LostAndFound() {
         .order("created_at", { ascending: false })
 
       if (discsError) {
-        throw discsError
+        console.error("Error fetching lost discs:", discsError)
+        setFetchError(`Failed to fetch lost discs: ${discsError.message}`)
+        toast({
+          title: "Error",
+          description: `Failed to load lost discs: ${discsError.message}`,
+          variant: "destructive",
+        })
+        return
       }
 
       console.log(`Fetched ${discsData?.length || 0} lost discs`)
 
+      if (!discsData || discsData.length === 0) {
+        console.log("No lost discs found in database")
+        setDiscs([])
+        setFilteredDiscs([])
+        setLoading(false)
+        return
+      }
+
       // Process discs with finder names
       const processedDiscs = await Promise.all(
         (discsData || []).map(async (disc: any) => {
-          const finderName = await getUserDisplayName(disc.user_id)
-          return {
-            ...disc,
-            finder_name: finderName,
+          try {
+            const finderName = await getUserDisplayName(disc.user_id)
+            return {
+              ...disc,
+              finder_name: finderName,
+            }
+          } catch (error) {
+            console.error(`Error getting finder name for disc ${disc.id}:`, error)
+            return {
+              ...disc,
+              finder_name: "Unknown",
+            }
           }
         }),
       )
@@ -115,19 +141,24 @@ export default function LostAndFound() {
       // Fetch images for each disc
       const discsWithImages = await Promise.all(
         processedDiscs.map(async (disc) => {
-          const { data: imagesData, error: imagesError } = await supabase
-            .from("lost_disc_images")
-            .select("storage_path")
-            .eq("lost_disc_id", disc.id)
+          try {
+            const { data: imagesData, error: imagesError } = await supabase
+              .from("lost_disc_images")
+              .select("storage_path")
+              .eq("lost_disc_id", disc.id)
 
-          if (imagesError) {
-            console.error("Error fetching images:", imagesError)
+            if (imagesError) {
+              console.error("Error fetching images:", imagesError)
+              return { ...disc, images: [] }
+            }
+
+            return {
+              ...disc,
+              images: imagesData ? imagesData.map((img) => img.storage_path) : [],
+            }
+          } catch (error) {
+            console.error(`Error processing images for disc ${disc.id}:`, error)
             return { ...disc, images: [] }
-          }
-
-          return {
-            ...disc,
-            images: imagesData ? imagesData.map((img) => img.storage_path) : [],
           }
         }),
       )
@@ -148,8 +179,9 @@ export default function LostAndFound() {
         }
       }
       setImageUrls(urlMap)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching lost discs:", error)
+      setFetchError(`Failed to fetch lost discs: ${error.message || "Unknown error"}`)
       toast({
         title: "Error",
         description: "Failed to load lost discs. Please try again.",
@@ -252,6 +284,10 @@ export default function LostAndFound() {
 
   const canEditDisc = (disc: LostDisc) => {
     return user && disc.user_id === user.id
+  }
+
+  const handleRetry = () => {
+    fetchDiscs()
   }
 
   const renderGridView = () => (
@@ -438,9 +474,26 @@ export default function LostAndFound() {
             )}
           </div>
 
+          {fetchError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {fetchError}
+                <Button variant="outline" size="sm" onClick={handleRetry} className="ml-2 mt-2">
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <p>Loading lost discs...</p>
+            </div>
+          ) : fetchError ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">Could not load lost discs due to an error</p>
             </div>
           ) : discs.length === 0 ? (
             <div className="text-center py-8">
@@ -453,6 +506,21 @@ export default function LostAndFound() {
             renderGridView()
           ) : (
             renderListView()
+          )}
+
+          {/* Debug info - only visible in development */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-8 p-4 border rounded bg-gray-50 text-xs">
+              <h3 className="font-bold mb-2">Debug Info:</h3>
+              <p>User ID: {user?.id || "Not logged in"}</p>
+              <p>Total discs: {discs.length}</p>
+              <p>Filtered discs: {filteredDiscs.length}</p>
+              <p>View mode: {viewMode}</p>
+              <p>Has error: {fetchError ? "Yes" : "No"}</p>
+              <Button variant="outline" size="sm" onClick={fetchDiscs} className="mt-2">
+                Refresh Data
+              </Button>
+            </div>
           )}
         </div>
 
