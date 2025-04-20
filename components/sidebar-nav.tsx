@@ -3,7 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Disc, Search, PlusCircle, User, CheckCircle } from "lucide-react"
+import { Disc, Search, PlusCircle, User, CheckCircle, Settings } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/app/context/AuthContext"
+import { isUserAdmin } from "@/app/actions/admin-actions"
 
 interface SidebarNavProps {
   className?: string
@@ -11,6 +14,20 @@ interface SidebarNavProps {
 
 export function SidebarNav({ className }: SidebarNavProps) {
   const pathname = usePathname()
+  const { user } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check if the user is an admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isUserAdmin(user.id)
+        setIsAdmin(adminStatus)
+      }
+    }
+
+    checkAdminStatus()
+  }, [user])
 
   // Let's log the exact path to check for any issues
   console.log("SidebarNav current pathname:", pathname)
@@ -42,6 +59,15 @@ export function SidebarNav({ className }: SidebarNavProps) {
       icon: <User className="h-4 w-4 mr-2" />,
     },
   ]
+
+  // Add admin link if user is an admin
+  if (isAdmin) {
+    navItems.push({
+      title: "Admin Settings",
+      href: "/admin",
+      icon: <Settings className="h-4 w-4 mr-2" />,
+    })
+  }
 
   return (
     <nav className={cn("flex flex-col space-y-1", className)}>

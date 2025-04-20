@@ -1,6 +1,6 @@
 "use server"
 
-import { OpenAI } from "openai"
+import { supabase } from "@/lib/supabase"
 
 interface DiscFields {
   brand?: string
@@ -11,71 +11,228 @@ interface DiscFields {
   condition?: string
   inked?: boolean
   notes?: string
+  error?: string
+}
+
+// Function to get prompts from the database
+async function getPrompts() {
+  try {
+    const { data: systemPrompt, error: systemError } = await supabase
+      .from("prompts")
+      .select("content")
+      .eq("name", "voice_input_system")
+      .single()
+
+    const { data: userPrompt, error: userError } = await supabase
+      .from("prompts")
+      .select("content")
+      .eq("name", "voice_input_user")
+      .single()
+
+    if (systemError || userError) {
+      console.error("Error fetching prompts:", systemError || userError)
+      return {
+        systemPrompt: "You are a disc golf expert assistant specializing in extracting information about discs.",
+        userPrompt:
+          "Extract the following fields if mentioned in this description: brand, name, color, plastic, weight, condition, inked (boolean), notes.",
+      }
+    }
+
+    return {
+      systemPrompt: systemPrompt?.content,
+      userPrompt: userPrompt?.content,
+    }
+  } catch (error) {
+    console.error("Error in getPrompts:", error)
+    return {
+      systemPrompt: "You are a disc golf expert assistant specializing in extracting information about discs.",
+      userPrompt:
+        "Extract the following fields if mentioned in this description: brand, name, color, plastic, weight, condition, inked (boolean), notes.",
+    }
+  }
 }
 
 export async function processVoiceInput(transcript: string): Promise<DiscFields> {
+  // Check if transcript is valid
+  if (!transcript || typeof transcript !== "string") {
+    console.error("Invalid transcript provided:", transcript)
+    return {
+      error: "Invalid input: Please provide a valid description.",
+    }
+  }
+
   try {
-    // Initialize the OpenAI client
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+    // Check if API key exists
+    const apiKey = process.env.OPENAI_API_KEY
+
+    if (!apiKey) {
+      console.error("OpenAI API key is missing. Please check your environment variables.")
+      return {
+        error: "OpenAI API key is missing. Please check your environment variables.",
+      }
+    }
+
+    // Get prompts from the database
+    const { systemPrompt, userPrompt } = await getPrompts()
+
+    // Replace {transcript} placeholder in the user prompt
+    const formattedUserPrompt = userPrompt.replace("{transcript}", transcript)
+
+    // Use fetch directly instead of the OpenAI client library
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: formattedUserPrompt,
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
     })
 
-    const prompt = `
-You are a disc golf expert assistant. Extract structured information about a disc from the following description.
-Extract ONLY the following fields if mentioned:
-- brand: The manufacturer (e.g., Innova, Discraft, Dynamic Discs, etc.)
-- name: The disc mold name (e.g., Destroyer, Buzzz, Judge, etc.)
-- color: The color of the disc
-- plastic: The plastic type (e.g., Star, Champion, ESP, Z, Lucid, etc.)
-- weight: The weight in grams (just the number)
-- condition: The condition of the disc (e.g., New, Used, Beat in, etc.)
-- inked: Boolean indicating if the disc is inked or not
-- notes: Any additional information that doesn't fit in other fields
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error("OpenAI API error:", errorData)
+      return {
+        error: `OpenAI API error: ${errorData.error?.message || response.statusText || "Unknown error"}`,
+      }
+    }
 
-Description: "${transcript}"
+    const data = await response.json()
 
-Respond with ONLY a JSON object containing these fields. Do not include fields that aren't mentioned in the description.
-Example response format:
-{
- "brand": "Innova",
- "name": "Destroyer",
- "color": "Blue",
- "plastic": "Star",
- "weight": "175",
- "condition": "New",
- "inked": false
-}
-`
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error("Invalid response format from OpenAI:", data)
+      return { error: "Received an invalid response format from the AI service." }
+    }
 
-    // Use the OpenAI API to process the transcript
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: prompt,
-        },
-      ],
-      temperature: 0.1, // Low temperature for more deterministic results
-      max_tokens: 500,
-    })
-
-    // Parse the JSON response
     try {
-      const resultText = response.choices[0].message.content
-      if (!resultText) {
-        return {}
+      const resultText = data.choices[0].message.content
+
+      // Log the raw response from OpenAI
+      console.log("Raw OpenAI response:", resultText)
+
+      // Clean the response if it contains markdown code blocks
+      let jsonString = resultText
+
+      // Check if the response is wrapped in markdown code blocks
+      const jsonBlockMatch = resultText.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (jsonBlockMatch && jsonBlockMatch[1]) {
+        // Extract the JSON content from inside the code block
+        jsonString = jsonBlockMatch[1].trim()
       }
 
-      const result = JSON.parse(resultText)
+      // Parse the cleaned JSON string
+      const result = JSON.parse(jsonString)
+
+      // Log the parsed result
+      console.log("Parsed JSON result:", result)
+
       return result
     } catch (parseError) {
       console.error("Error parsing LLM response:", parseError)
-      console.log("Raw response:", response.choices[0].message.content)
-      return {}
+      console.log("Raw response:", data.choices[0].message.content)
+
+      // If parsing fails, fall back to basic extraction
+      return extractBasicInfo(transcript)
     }
-  } catch (error) {
-    console.error("Error processing voice input with LLM:", error)
-    return {}
+  } catch (error: any) {
+    console.error("Error processing voice input:", error)
+
+    // Fall back to basic extraction if the API call fails
+    return extractBasicInfo(transcript)
   }
+}
+
+// Fallback function to extract basic information without AI
+function extractBasicInfo(text: string): DiscFields {
+  const result: DiscFields = {}
+  const lowerText = text.toLowerCase()
+
+  // Simple brand detection
+  const brands = [
+    { key: "innova", value: "innova" },
+    { key: "discraft", value: "discraft" },
+    { key: "dynamic disc", value: "dynamic-discs" },
+    { key: "latitude 64", value: "latitude-64" },
+    { key: "prodigy", value: "prodigy" },
+    { key: "mvp", value: "mvp" },
+    { key: "westside", value: "other" },
+    { key: "discmania", value: "other" },
+  ]
+
+  for (const brand of brands) {
+    if (lowerText.includes(brand.key)) {
+      result.brand = brand.value
+      break
+    }
+  }
+
+  // Simple color detection
+  const colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink", "white", "black"]
+  for (const color of colors) {
+    if (lowerText.includes(color)) {
+      result.color = color
+      break
+    }
+  }
+
+  // Simple plastic detection
+  const plastics = ["star", "champion", "dx", "esp", "z", "lucid", "fuzion", "gold", "opto"]
+  for (const plastic of plastics) {
+    if (lowerText.includes(plastic)) {
+      result.plastic = plastic
+      break
+    }
+  }
+
+  // Weight detection (look for numbers followed by "gram" or "g")
+  const weightMatch = lowerText.match(/(\d+)\s*(gram|g)/)
+  if (weightMatch) {
+    result.weight = weightMatch[1]
+  }
+
+  // Condition detection
+  const conditions = ["new", "used", "beat", "worn", "mint", "excellent"]
+  for (const condition of conditions) {
+    if (lowerText.includes(condition)) {
+      result.condition = condition
+      break
+    }
+  }
+
+  // Check for inked
+  if (lowerText.includes("ink") || lowerText.includes("inked")) {
+    result.inked = true
+  } else if (lowerText.includes("no ink") || lowerText.includes("not inked")) {
+    result.inked = false
+  }
+
+  // Try to extract disc name - this is more complex, so we'll use a simple approach
+  // Look for common disc names
+  const discNames = ["destroyer", "buzzz", "judge", "teebird", "aviar", "zone", "harp", "wraith", "valkyrie", "truth"]
+  for (const name of discNames) {
+    if (lowerText.includes(name)) {
+      result.name = name.charAt(0).toUpperCase() + name.slice(1)
+      break
+    }
+  }
+
+  // If we couldn't find a specific disc name, use any remaining text as notes
+  if (!result.name && text.length > 0) {
+    result.notes = "Additional information: " + text
+  }
+
+  return result
 }

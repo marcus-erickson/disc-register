@@ -16,6 +16,7 @@ interface VoiceInputProps {
     condition?: string
     inked?: boolean
     notes?: string
+    error?: string
   }) => void
   disabled?: boolean
 }
@@ -38,12 +39,59 @@ declare global {
   }
 }
 
+// Add this mapping function after the imports but before the VoiceInput component
+function mapBrandToDropdownValue(brand: string | undefined): string | undefined {
+  if (!brand) return undefined
+
+  // Convert to lowercase for case-insensitive matching
+  const brandLower = brand.toLowerCase()
+
+  // Map of possible brand names to their dropdown values
+  const brandMap: Record<string, string> = {
+    // Exact matches
+    innova: "innova",
+    discraft: "discraft",
+    "dynamic discs": "dynamic-discs",
+    "dynamic disc": "dynamic-discs",
+    "dynamic-discs": "dynamic-discs",
+    "latitude 64": "latitude-64",
+    latitude64: "latitude-64",
+    "latitude-64": "latitude-64",
+    prodigy: "prodigy",
+    mvp: "mvp",
+    westside: "other",
+    discmania: "other",
+
+    // Common variations
+    dd: "dynamic-discs",
+    lat64: "latitude-64",
+    "lat 64": "latitude-64",
+    l64: "latitude-64",
+  }
+
+  // Check for exact matches in our map
+  if (brandMap[brandLower]) {
+    return brandMap[brandLower]
+  }
+
+  // Check for partial matches
+  for (const [key, value] of Object.entries(brandMap)) {
+    if (brandLower.includes(key)) {
+      return value
+    }
+  }
+
+  // If no match found, default to "other"
+  return "other"
+}
+
 export default function VoiceInput({ onResult, disabled = false }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
   const [fullTranscript, setFullTranscript] = useState("") // Track the full transcript across pauses
+  const [error, setError] = useState<string | null>(null)
 
   // Initialize speech recognition
   useEffect(() => {
@@ -113,12 +161,14 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
       const combinedTranscript = fullTranscript + " " + transcript
       if (combinedTranscript.trim()) {
         setIsProcessing(true)
+        setError(null)
         processWithLLM(combinedTranscript.trim())
       }
     } else {
       // Reset transcripts when starting a new recording
       setTranscript("")
       setFullTranscript("")
+      setError(null)
       recognition.start()
       setIsListening(true)
     }
@@ -126,18 +176,41 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
 
   const processWithLLM = async (text: string) => {
     try {
-      // Call the server action to process the transcript with an LLM
+      if (!text || typeof text !== "string" || text.trim() === "") {
+        setError("No speech detected. Please try again.")
+        setIsProcessing(false)
+        return
+      }
+
+      // Call the server action to process the transcript
       const result = await processVoiceInput(text)
 
+      // Check if there was an error
+      if (result && "error" in result && result.error) {
+        setError(result.error)
+        toast({
+          title: "Processing Error",
+          description: result.error,
+          variant: "destructive",
+        })
+        return
+      }
+
       // Send the extracted information back
+      // Map the brand to the dropdown value before sending
+      if (result.brand) {
+        result.brand = mapBrandToDropdownValue(result.brand)
+      }
       onResult(result)
 
       toast({
         title: "Voice Input Processed",
-        description: "Successfully extracted disc information using AI.",
+        description: "Successfully extracted disc information.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error processing with LLM:", error)
+      const errorMessage = error?.message || "Unknown error occurred"
+      setError(`Failed to extract disc information: ${errorMessage}`)
       toast({
         title: "Processing Error",
         description: "Failed to extract disc information. Please try again or enter manually.",
@@ -161,7 +234,7 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
           {isProcessing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing with AI...
+              Processing...
             </>
           ) : isListening ? (
             <>
@@ -185,6 +258,13 @@ export default function VoiceInput({ onResult, disabled = false }: VoiceInputPro
           <p className="italic">
             {fullTranscript} {transcript}
           </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
+          <p className="font-medium">Error:</p>
+          <p>{error}</p>
         </div>
       )}
     </div>

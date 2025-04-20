@@ -1,16 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Disc, Search, PlusCircle, Home, User, CheckCircle } from "lucide-react"
+import { Menu, Disc, Search, PlusCircle, Home, User, CheckCircle, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/app/context/AuthContext"
+import { isUserAdmin } from "@/app/actions/admin-actions"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const { user } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check if the user is an admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const adminStatus = await isUserAdmin(user.id)
+        setIsAdmin(adminStatus)
+      }
+    }
+
+    checkAdminStatus()
+  }, [user])
 
   const navItems = [
     {
@@ -54,6 +70,15 @@ export function MobileNav() {
       icon: <User className="h-5 w-5 mr-2" />,
     },
   ]
+
+  // Add admin link if user is an admin
+  if (isAdmin) {
+    navItems.push({
+      title: "Admin Settings",
+      href: "/admin",
+      icon: <Settings className="h-5 w-5 mr-2" />,
+    })
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
