@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Disc, Search, PlusCircle, User } from "lucide-react"
+import { Disc, Search, PlusCircle, User, CheckCircle } from "lucide-react"
 
 interface SidebarNavProps {
   className?: string
@@ -30,6 +30,11 @@ export function SidebarNav({ className }: SidebarNavProps) {
       title: "Report Lost Disc",
       href: "/report-lost-disc",
       icon: <PlusCircle className="h-4 w-4 mr-2" />,
+    },
+    {
+      title: "Disc Claims",
+      href: "/claims",
+      icon: <CheckCircle className="h-4 w-4 mr-2" />,
     },
     {
       title: "Profile Settings",

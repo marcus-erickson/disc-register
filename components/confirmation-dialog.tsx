@@ -1,4 +1,5 @@
 "use client"
+import type React from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,7 @@ interface ConfirmationDialogProps {
   onClose: () => void
   onConfirm: () => void
   title: string
-  description: string
+  description: React.ReactNode
   confirmText?: string
   cancelText?: string
 }
@@ -34,7 +35,9 @@ export function ConfirmationDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogDescription asChild>
+            <div>{description}</div>
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelText || "No"}</AlertDialogCancel>
