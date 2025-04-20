@@ -16,6 +16,8 @@ import ProtectedRoute from "@/components/protected-route"
 import { AppLayout } from "@/components/app-layout"
 import ImageUpload from "@/components/image-upload"
 import { Toaster } from "@/components/ui/toaster"
+import VoiceInput from "@/components/voice-input"
+import { toast } from "@/components/ui/use-toast"
 
 export default function AddDisc() {
   const router = useRouter()
@@ -24,6 +26,8 @@ export default function AddDisc() {
   const [error, setError] = useState<string | null>(null)
   const [discId, setDiscId] = useState<string | null>(null)
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  // First, let's add a state to track which button was clicked
+  const [submitAction, setSubmitAction] = useState<"save" | "saveAndAddAnother">("save")
 
   const [disc, setDisc] = useState({
     name: "",
@@ -39,6 +43,7 @@ export default function AddDisc() {
     price: "",
   })
 
+  // Modify the handleSubmit function to handle the new action
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -91,7 +96,36 @@ export default function AddDisc() {
           }
         }
 
-        router.push("/")
+        toast({
+          title: "Success",
+          description: "Disc added to your collection",
+        })
+
+        // If "Save and Add Another" was clicked, reset the form
+        if (submitAction === "saveAndAddAnother") {
+          // Reset form fields
+          setDisc({
+            name: "",
+            brand: "",
+            plastic: "",
+            weight: "",
+            condition: "",
+            color: "",
+            stamp: "",
+            notes: "",
+            inked: false,
+            for_sale: false,
+            price: "",
+          })
+          // Reset uploaded images
+          setUploadedImages([])
+          setDiscId(null)
+          // Scroll to top of form
+          window.scrollTo({ top: 0, behavior: "smooth" })
+        } else {
+          // Navigate back to collection
+          router.push("/")
+        }
       }
     } catch (error) {
       console.error("Error adding disc:", error)
@@ -114,11 +148,41 @@ export default function AddDisc() {
     setUploadedImages((prev) => [...prev, path])
   }
 
+  const handleVoiceResult = (result: any) => {
+    // Update the disc state with the LLM-extracted fields
+    setDisc((prev) => ({
+      ...prev,
+      brand: result.brand || prev.brand,
+      name: result.name || prev.name,
+      color: result.color || prev.color,
+      plastic: result.plastic || prev.plastic,
+      weight: result.weight || prev.weight,
+      condition: result.condition || prev.condition,
+      inked: result.inked !== undefined ? result.inked : prev.inked,
+      notes: result.notes || prev.notes,
+    }))
+
+    toast({
+      title: "Voice Input Processed",
+      description: "The form has been updated with your spoken description.",
+    })
+  }
+
   return (
     <ProtectedRoute>
       <AppLayout>
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-4">Add New Disc</h1>
+
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h2 className="text-lg font-medium mb-2">Voice Input</h2>
+            <p className="text-sm text-gray-600 mb-3">
+              Describe your disc with your voice. For example: "A purple Judge from Dynamic Discs in Lucid plastic, 175
+              grams, slightly used and inked with my name."
+            </p>
+            <VoiceInput onResult={handleVoiceResult} disabled={isSubmitting} />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
             <div>
               <Label htmlFor="brand">Brand</Label>
@@ -218,9 +282,19 @@ export default function AddDisc() {
             </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add Disc"}
-            </Button>
+            <div className="flex gap-3">
+              <Button type="submit" disabled={isSubmitting} onClick={() => setSubmitAction("save")}>
+                {isSubmitting && submitAction === "save" ? "Adding..." : "Add Disc"}
+              </Button>
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={() => setSubmitAction("saveAndAddAnother")}
+              >
+                {isSubmitting && submitAction === "saveAndAddAnother" ? "Adding..." : "Save & Add Another"}
+              </Button>
+            </div>
           </form>
         </div>
         <Toaster />
