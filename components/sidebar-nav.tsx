@@ -13,14 +13,12 @@ export function SidebarNav({ className }: SidebarNavProps) {
 
   const navItems = [
     {
-      title: "My Disc Golf Collection",
+      title: "My Discs",
       href: "/",
-      label: "My Discs",
     },
     {
       title: "Lost and Found",
       href: "/lost-and-found",
-      label: "Lost and Found",
     },
   ]
 
@@ -30,18 +28,16 @@ export function SidebarNav({ className }: SidebarNavProps) {
         const isActive = pathname === item.href
 
         return (
-          <div key={item.href} className="flex flex-col">
-            <span className="px-3 py-1 text-xs font-medium text-gray-500">{item.label}</span>
-            <Link
-              href={item.href}
-              className={cn(
-                "flex items-center px-3 py-2 text-sm font-medium rounded-md",
-                isActive ? "bg-green-100 text-green-800" : "text-gray-700 hover:bg-gray-100",
-              )}
-            >
-              {item.title}
-            </Link>
-          </div>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              isActive ? "bg-green-100 text-green-800" : "text-gray-700 hover:bg-gray-100",
+            )}
+          >
+            {item.title}
+          </Link>
         )
       })}
     </nav>
