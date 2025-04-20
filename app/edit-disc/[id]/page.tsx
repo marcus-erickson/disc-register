@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/app/context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
-import Header from "@/components/header"
+import { AppLayout } from "@/components/app-layout"
 import ImageUpload from "@/components/image-upload"
 import ImageGallery from "@/components/image-gallery"
 import { Trash2 } from "lucide-react"
 import { deleteImage } from "@/lib/storage-utils"
+import { Toaster } from "@/components/ui/toaster"
 
 interface DiscImage {
   id: string
@@ -200,155 +201,158 @@ export default function EditDisc() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
-          <p>Loading disc data...</p>
-        </div>
+        <AppLayout>
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
+            <p>Loading disc data...</p>
+          </div>
+        </AppLayout>
       </ProtectedRoute>
     )
   }
 
   return (
     <ProtectedRoute>
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
-          <div>
-            <Label htmlFor="name">Disc Name</Label>
-            <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
-          </div>
-          <div>
-            <Label htmlFor="brand">Brand</Label>
-            <Select
-              name="brand"
-              value={disc.brand}
-              onValueChange={(value) => setDisc((prev) => ({ ...prev, brand: value }))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a brand" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="innova">Innova</SelectItem>
-                <SelectItem value="discraft">Discraft</SelectItem>
-                <SelectItem value="dynamic-discs">Dynamic Discs</SelectItem>
-                <SelectItem value="latitude-64">Latitude 64</SelectItem>
-                <SelectItem value="prodigy">Prodigy</SelectItem>
-                <SelectItem value="mvp">MVP</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="plastic">Plastic</Label>
-            <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} required />
-          </div>
-          <div>
-            <Label htmlFor="stamp">Stamp</Label>
-            <Input type="text" id="stamp" name="stamp" value={disc.stamp} onChange={handleChange} />
-          </div>
-          <div>
-            <Label htmlFor="color">Color</Label>
-            <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
-          </div>
-          <div>
-            <Label htmlFor="weight">Weight (g)</Label>
-            <Input type="number" id="weight" name="weight" value={disc.weight} onChange={handleChange} required />
-          </div>
-          <div>
-            <Label htmlFor="condition">Condition</Label>
-            <Input
-              type="text"
-              id="condition"
-              name="condition"
-              value={disc.condition}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="inked"
-              name="inked"
-              checked={disc.inked}
-              onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, inked: checked as boolean }))}
-            />
-            <Label htmlFor="inked">Inked</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="for_sale"
-              name="for_sale"
-              checked={disc.for_sale}
-              onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, for_sale: checked as boolean }))}
-            />
-            <Label htmlFor="for_sale">For Sale</Label>
-          </div>
-          {disc.for_sale && (
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold mb-4">Edit Disc</h1>
+          <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
             <div>
-              <Label htmlFor="price">Price ($)</Label>
-              <Input type="number" id="price" name="price" value={disc.price} onChange={handleChange} step="0.01" />
+              <Label htmlFor="name">Disc Name</Label>
+              <Input type="text" id="name" name="name" value={disc.name} onChange={handleChange} required />
             </div>
-          )}
+            <div>
+              <Label htmlFor="brand">Brand</Label>
+              <Select
+                name="brand"
+                value={disc.brand}
+                onValueChange={(value) => setDisc((prev) => ({ ...prev, brand: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="innova">Innova</SelectItem>
+                  <SelectItem value="discraft">Discraft</SelectItem>
+                  <SelectItem value="dynamic-discs">Dynamic Discs</SelectItem>
+                  <SelectItem value="latitude-64">Latitude 64</SelectItem>
+                  <SelectItem value="prodigy">Prodigy</SelectItem>
+                  <SelectItem value="mvp">MVP</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="plastic">Plastic</Label>
+              <Input type="text" id="plastic" name="plastic" value={disc.plastic} onChange={handleChange} required />
+            </div>
+            <div>
+              <Label htmlFor="stamp">Stamp</Label>
+              <Input type="text" id="stamp" name="stamp" value={disc.stamp} onChange={handleChange} />
+            </div>
+            <div>
+              <Label htmlFor="color">Color</Label>
+              <Input type="text" id="color" name="color" value={disc.color} onChange={handleChange} required />
+            </div>
+            <div>
+              <Label htmlFor="weight">Weight (g)</Label>
+              <Input type="number" id="weight" name="weight" value={disc.weight} onChange={handleChange} required />
+            </div>
+            <div>
+              <Label htmlFor="condition">Condition</Label>
+              <Input
+                type="text"
+                id="condition"
+                name="condition"
+                value={disc.condition}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="inked"
+                name="inked"
+                checked={disc.inked}
+                onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, inked: checked as boolean }))}
+              />
+              <Label htmlFor="inked">Inked</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="for_sale"
+                name="for_sale"
+                checked={disc.for_sale}
+                onCheckedChange={(checked) => setDisc((prev) => ({ ...prev, for_sale: checked as boolean }))}
+              />
+              <Label htmlFor="for_sale">For Sale</Label>
+            </div>
+            {disc.for_sale && (
+              <div>
+                <Label htmlFor="price">Price ($)</Label>
+                <Input type="number" id="price" name="price" value={disc.price} onChange={handleChange} step="0.01" />
+              </div>
+            )}
 
-          <div>
-            <Label>Current Images</Label>
-            {existingImages.length > 0 ? (
-              <div className="space-y-4 mt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {existingImages.map((image) => (
-                    <div key={image.id} className="relative">
-                      <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
-                        <ImageGallery imagePaths={[image.storage_path]} />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteImage(image.id)}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                          aria-label="Delete image"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+            <div>
+              <Label>Current Images</Label>
+              {existingImages.length > 0 ? (
+                <div className="space-y-4 mt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {existingImages.map((image) => (
+                      <div key={image.id} className="relative">
+                        <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
+                          <ImageGallery imagePaths={[image.storage_path]} />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteImage(image.id)}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                            aria-label="Delete image"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">No images available</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Add New Images</Label>
+              <p className="text-sm text-gray-500 mb-2">
+                Upload additional images (up to {Math.max(0, 5 - existingImages.length)} more)
+              </p>
+              {existingImages.length < 5 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[...Array(Math.min(5 - existingImages.length, uploadedImages.length + 1))].map((_, index) => (
+                    <ImageUpload
+                      key={index}
+                      discId={discId}
+                      onImageUploaded={handleImageUploaded}
+                      disabled={isSubmitting || index > uploadedImages.length}
+                    />
                   ))}
                 </div>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 mt-2">No images available</p>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div>
-            <Label>Add New Images</Label>
-            <p className="text-sm text-gray-500 mb-2">
-              Upload additional images (up to {Math.max(0, 5 - existingImages.length)} more)
-            </p>
-            {existingImages.length < 5 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[...Array(Math.min(5 - existingImages.length, uploadedImages.length + 1))].map((_, index) => (
-                  <ImageUpload
-                    key={index}
-                    discId={discId}
-                    onImageUploaded={handleImageUploaded}
-                    disabled={isSubmitting || index > uploadedImages.length}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <div className="flex gap-4">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/")}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.push("/")}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+        <Toaster />
+      </AppLayout>
     </ProtectedRoute>
   )
 }

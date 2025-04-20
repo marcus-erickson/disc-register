@@ -1,19 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Header from "@/components/header"
+import { useEffect, useState, useCallback } from "react"
+import { AppLayout } from "@/components/app-layout"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "../context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { PencilIcon } from "lucide-react"
+import { PencilIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getImageUrl } from "@/lib/storage-utils"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import DiscFilters from "@/components/disc-filters"
 
 interface Disc {
   id: string
@@ -32,9 +36,16 @@ interface Disc {
 
 export default function ForSale() {
   const [discs, setDiscs] = useState<Disc[]>([])
+  const [filteredDiscs, setFilteredDiscs] = useState<Disc[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [discToDelete, setDiscToDelete] = useState<string | null>(null)
+  const [filters, setFilters] = useState<{ name: string | null; brand: string | null }>({
+    name: null,
+    brand: null,
+  })
   const { user } = useAuth()
   const router = useRouter()
 
@@ -51,81 +62,161 @@ export default function ForSale() {
     localStorage.setItem("discViewMode", viewMode)
   }, [viewMode])
 
-  useEffect(() => {
-    const fetchDiscs = async () => {
-      if (!user) return
+  const fetchDiscs = async () => {
+    if (!user) return
 
-      try {
-        // Fetch discs for sale
-        const { data: discsData, error: discsError } = await supabase
-          .from("discs")
-          .select("*")
-          .eq("for_sale", true)
-          .order("created_at", { ascending: false })
+    try {
+      setLoading(true)
+      // Fetch discs for sale
+      const { data: discsData, error: discsError } = await supabase
+        .from("discs")
+        .select("*")
+        .eq("for_sale", true)
+        .order("created_at", { ascending: false })
 
-        if (discsError) {
-          throw discsError
-        }
+      if (discsError) {
+        throw discsError
+      }
 
-        // Fetch images for each disc
-        const discsWithImages = await Promise.all(
-          (discsData || []).map(async (disc) => {
-            const { data: imagesData, error: imagesError } = await supabase
-              .from("disc_images")
-              .select("storage_path")
-              .eq("disc_id", disc.id)
+      // Fetch images for each disc
+      const discsWithImages = await Promise.all(
+        (discsData || []).map(async (disc) => {
+          const { data: imagesData, error: imagesError } = await supabase
+            .from("disc_images")
+            .select("storage_path")
+            .eq("disc_id", disc.id)
 
-            if (imagesError) {
-              console.error("Error fetching images:", imagesError)
-              return { ...disc, images: [] }
-            }
+          if (imagesError) {
+            console.error("Error fetching images:", imagesError)
+            return { ...disc, images: [] }
+          }
 
-            return {
-              ...disc,
-              images: imagesData.map((img) => img.storage_path),
-            }
-          }),
-        )
+          return {
+            ...disc,
+            images: imagesData.map((img) => img.storage_path),
+          }
+        }),
+      )
 
-        setDiscs(discsWithImages || [])
+      setDiscs(discsWithImages || [])
+      setFilteredDiscs(discsWithImages || [])
 
-        // Pre-fetch image URLs for the list view
-        const urlMap: Record<string, string> = {}
-        for (const disc of discsWithImages) {
-          if (disc.images && disc.images.length > 0) {
-            try {
-              const url = await getImageUrl(disc.images[0])
-              urlMap[disc.id] = url
-            } catch (error) {
-              console.error(`Error getting image URL for disc ${disc.id}:`, error)
-            }
+      // Pre-fetch image URLs for the list view
+      const urlMap: Record<string, string> = {}
+      for (const disc of discsWithImages) {
+        if (disc.images && disc.images.length > 0) {
+          try {
+            const url = await getImageUrl(disc.images[0])
+            urlMap[disc.id] = url
+          } catch (error) {
+            console.error(`Error getting image URL for disc ${disc.id}:`, error)
           }
         }
-        setImageUrls(urlMap)
-      } catch (error) {
-        console.error("Error fetching discs for sale:", error)
-      } finally {
-        setLoading(false)
       }
+      setImageUrls(urlMap)
+    } catch (error) {
+      console.error("Error fetching discs for sale:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load discs. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchDiscs()
   }, [user])
+
+  // Apply filters when discs or filters change
+  useEffect(() => {
+    let result = [...discs]
+
+    if (filters.name) {
+      result = result.filter((disc) => disc.name === filters.name)
+    }
+
+    if (filters.brand) {
+      result = result.filter((disc) => disc.brand === filters.brand)
+    }
+
+    setFilteredDiscs(result)
+  }, [discs, filters])
 
   const handleViewChange = (view: "grid" | "list") => {
     setViewMode(view)
   }
 
+  // Use useCallback to prevent unnecessary re-renders
+  const handleFilterChange = useCallback((newFilters: { name: string | null; brand: string | null }) => {
+    setFilters(newFilters)
+  }, [])
+
+  const handleDeleteClick = (discId: string) => {
+    setDiscToDelete(discId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!discToDelete) return
+
+    try {
+      // First, delete any associated images from the disc_images table
+      const { error: imagesError } = await supabase.from("disc_images").delete().eq("disc_id", discToDelete)
+
+      if (imagesError) {
+        console.error("Error deleting disc images:", imagesError)
+      }
+
+      // Then delete the disc itself
+      const { error: discError } = await supabase.from("discs").delete().eq("id", discToDelete)
+
+      if (discError) {
+        throw discError
+      }
+
+      // Update the UI by removing the deleted disc
+      setDiscs((prevDiscs) => prevDiscs.filter((disc) => disc.id !== discToDelete))
+
+      toast({
+        title: "Success",
+        description: "Disc deleted successfully",
+      })
+    } catch (error) {
+      console.error("Error deleting disc:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete disc. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setDiscToDelete(null)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setDiscToDelete(null)
+  }
+
   const renderGridView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {discs.map((disc) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {filteredDiscs.map((disc) => (
         <Card key={disc.id} className="overflow-hidden">
-          <div className="flex flex-col md:flex-row p-4">
-            {/* Image on the side */}
-            <div className="md:w-1/3 mb-4 md:mb-0 md:mr-4">
+          <div className="p-3">
+            {/* Image */}
+            <div className="mb-3">
               {disc.images && disc.images.length > 0 ? (
                 <div className="relative w-full h-32 bg-gray-100 rounded-md overflow-hidden">
-                  <Image src={imageUrls[disc.id] || "/placeholder.svg"} alt={disc.name} fill className="object-cover" />
+                  <Image
+                    src={imageUrls[disc.id] || "/placeholder.svg"}
+                    alt={disc.name}
+                    fill
+                    className="object-contain"
+                  />
                 </div>
               ) : (
                 <div className="w-full h-32 bg-gray-100 rounded-md flex items-center justify-center">
@@ -134,55 +225,40 @@ export default function ForSale() {
               )}
             </div>
 
-            {/* Disc details */}
-            <div className="md:w-2/3">
-              <h3 className="text-lg font-bold mb-2">{disc.name}</h3>
+            {/* Main disc info - without labels */}
+            <h3 className="text-lg font-bold truncate">{disc.name}</h3>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600">{disc.brand}</span>
+              <span className="text-sm font-medium">{disc.weight}g</span>
+            </div>
 
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
-                <div>
-                  <p className="text-sm text-gray-500">Brand</p>
-                  <p className="font-medium">{disc.brand}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Plastic</p>
-                  <p className="font-medium">{disc.plastic}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Weight</p>
-                  <p className="font-medium">{disc.weight}g</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Color</p>
-                  <p className="font-medium">{disc.color}</p>
-                </div>
-                {disc.stamp && (
-                  <div>
-                    <p className="text-sm text-gray-500">Stamp</p>
-                    <p className="font-medium">{disc.stamp}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-gray-500">Condition</p>
-                  <p className="font-medium">{disc.condition}</p>
-                </div>
-              </div>
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {disc.inked && (
+                <Badge variant="outline" className="text-xs">
+                  Inked
+                </Badge>
+              )}
+              <Badge className="bg-green-500 text-xs">${disc.price}</Badge>
+            </div>
 
-              <div className="flex flex-wrap gap-2 mb-3">
-                {disc.inked && (
-                  <Badge variant="outline" className="text-xs">
-                    Inked
-                  </Badge>
-                )}
-                <Badge className="bg-green-500 text-xs">Price: ${disc.price}</Badge>
-              </div>
-
+            {/* Action buttons */}
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="flex-1"
                 onClick={() => router.push(`/edit-disc/${disc.id}`)}
               >
-                <PencilIcon className="h-4 w-4 mr-2" /> Edit Disc
+                <PencilIcon className="h-4 w-4 mr-2" /> Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => handleDeleteClick(disc.id)}
+              >
+                <Trash2Icon className="h-4 w-4 mr-2" /> Delete
               </Button>
             </div>
           </div>
@@ -210,7 +286,7 @@ export default function ForSale() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {discs.map((disc) => (
+          {filteredDiscs.map((disc) => (
             <TableRow key={disc.id}>
               <TableCell>
                 {disc.images && disc.images.length > 0 && imageUrls[disc.id] ? (
@@ -219,7 +295,7 @@ export default function ForSale() {
                       src={imageUrls[disc.id] || "/placeholder.svg"}
                       alt={disc.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </div>
                 ) : (
@@ -244,9 +320,27 @@ export default function ForSale() {
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="outline" size="sm" onClick={() => router.push(`/edit-disc/${disc.id}`)}>
-                  <PencilIcon className="h-4 w-4 mr-2" /> Edit
-                </Button>
+                <div className="flex justify-end gap-2">
+                  {/* Icon-only buttons for edit and delete */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.push(`/edit-disc/${disc.id}`)}
+                    className="h-8 w-8"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    <span className="sr-only">Edit</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteClick(disc.id)}
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2Icon className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -257,8 +351,7 @@ export default function ForSale() {
 
   return (
     <ProtectedRoute>
-      <main className="min-h-screen bg-gray-100">
-        <Header />
+      <AppLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Discs For Sale</h1>
@@ -276,13 +369,38 @@ export default function ForSale() {
                 </a>
               </p>
             </div>
-          ) : viewMode === "grid" ? (
-            renderGridView()
           ) : (
-            renderListView()
+            <>
+              <DiscFilters discs={discs} onFilterChange={handleFilterChange} currentFilters={filters} />
+
+              {filteredDiscs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No discs match your filters</p>
+                  <Button variant="link" onClick={() => setFilters({ name: null, brand: null })}>
+                    Clear filters
+                  </Button>
+                </div>
+              ) : viewMode === "grid" ? (
+                renderGridView()
+              ) : (
+                renderListView()
+              )}
+            </>
           )}
         </div>
-      </main>
+
+        <ConfirmationDialog
+          isOpen={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Disc"
+          description="Are you sure you want to delete this disc? This action cannot be undone."
+          confirmText="Yes"
+          cancelText="No"
+        />
+
+        <Toaster />
+      </AppLayout>
     </ProtectedRoute>
   )
 }

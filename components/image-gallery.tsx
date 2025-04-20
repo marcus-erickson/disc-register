@@ -105,7 +105,7 @@ export default function ImageGallery({ imagePaths }: ImageGalleryProps) {
                 selectedImage === url ? "border-blue-500" : "border-transparent"
               }`}
             >
-              <Image src={url || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
+              <Image src={url || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-contain" />
             </button>
           ))}
         </div>
