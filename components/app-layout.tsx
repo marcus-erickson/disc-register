@@ -45,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <h1 className="text-2xl font-bold">Disc Register</h1>
           {user && (
             <div className="flex items-center gap-4">
-              <span className="hidden md:inline">{userName ? `Hello, ${userName}` : "Welcome"}</span>
+              <span className="hidden md:inline">{userName || "Welcome"}</span>
               <Button
                 variant="outline"
                 className="text-green-600 bg-white border-white hover:bg-green-700 hover:text-white"

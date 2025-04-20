@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/app/context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, ExternalLinkIcon } from "lucide-react"
+import { CalendarIcon, ExternalLinkIcon, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
@@ -20,6 +20,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { format } from "date-fns"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { X } from "lucide-react"
 
 interface LostDisc {
   id: string
@@ -332,13 +333,13 @@ export default function LostAndFound() {
             </div>
           </div>
 
-          {/* Search bar */}
+          {/* Search bar - changed from type="search" to type="text" */}
           <div className="relative mb-4">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <ExternalLinkIcon className="h-5 w-5 text-gray-400" />
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
             <Input
-              type="search"
+              type="text"
               placeholder="Search by brand, name, or written info..."
               value={searchQuery}
               onChange={handleSearchChange}
@@ -348,15 +349,9 @@ export default function LostAndFound() {
               <button
                 onClick={clearSearch}
                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                aria-label="Clear search"
               >
-                <span className="sr-only">Clear search</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
