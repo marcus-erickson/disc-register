@@ -7,7 +7,6 @@ import { Disc, Search, PlusCircle, User, CheckCircle, Settings } from "lucide-re
 import { useEffect, useState } from "react"
 import { useAuth } from "@/app/context/AuthContext"
 import { isUserAdmin } from "@/app/actions/admin-actions"
-import { toast } from "@/components/ui/use-toast"
 
 interface SidebarNavProps {
   className?: string
@@ -28,21 +27,8 @@ export function SidebarNav({ className }: SidebarNavProps) {
           const adminStatus = await isUserAdmin(user.id)
           console.log("Admin status result:", adminStatus)
           setIsAdmin(adminStatus)
-
-          // For debugging on mobile
-          if (adminStatus) {
-            toast({
-              title: "Admin Status",
-              description: "You have administrator privileges",
-            })
-          }
         } catch (error) {
           console.error("Error checking admin status:", error)
-          toast({
-            title: "Admin Check Error",
-            description: "Could not verify administrator status",
-            variant: "destructive",
-          })
         } finally {
           setIsAdminChecked(true)
         }
@@ -119,29 +105,6 @@ export function SidebarNav({ className }: SidebarNavProps) {
           </Link>
         )
       })}
-
-      {/* Debug info - only visible in development */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="mt-4 p-2 text-xs bg-gray-100 rounded">
-          <p>User ID: {user?.id || "Not logged in"}</p>
-          <p>Admin: {isAdmin ? "Yes" : "No"}</p>
-          <p>Admin Checked: {isAdminChecked ? "Yes" : "No"}</p>
-          <button
-            onClick={async () => {
-              if (user) {
-                const status = await isUserAdmin(user.id)
-                toast({
-                  title: "Admin Check",
-                  description: `Admin status: ${status ? "Yes" : "No"}`,
-                })
-              }
-            }}
-            className="mt-1 text-xs text-blue-600 underline"
-          >
-            Check Admin
-          </button>
-        </div>
-      )}
     </nav>
   )
 }

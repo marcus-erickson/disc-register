@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/app/context/AuthContext"
 import ProtectedRoute from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, ExternalLinkIcon, Search, X, AlertTriangle } from "lucide-react"
+import { CalendarIcon, ExternalLinkIcon, Search, X, AlertTriangle, PencilIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import ViewToggle from "@/components/view-toggle"
 import Image from "next/image"
@@ -359,11 +359,8 @@ export default function LostAndFound() {
             <TableHead className="w-[80px]">Image</TableHead>
             <TableHead>Mold</TableHead>
             <TableHead>Brand</TableHead>
-            <TableHead>Color</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Date Found</TableHead>
-            <TableHead>Found By</TableHead>
-            <TableHead>Written Info</TableHead>
+            <TableHead className="hidden sm:table-cell">Color</TableHead>
+            <TableHead className="hidden md:table-cell">Date Found</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -395,40 +392,42 @@ export default function LostAndFound() {
                 </button>
               </TableCell>
               <TableCell>{formatBrandName(disc.brand)}</TableCell>
-              <TableCell>{disc.color}</TableCell>
-              <TableCell>{formatLocation(disc)}</TableCell>
-              <TableCell>{formatDate(disc.date_found)}</TableCell>
-              <TableCell>{disc.finder_name || "Unknown"}</TableCell>
-              <TableCell>{disc.written_info || "-"}</TableCell>
+              <TableCell className="hidden sm:table-cell">{disc.color}</TableCell>
+              <TableCell className="hidden md:table-cell">{formatDate(disc.date_found)}</TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(`/lost-discs/${disc.id}`)}
-                  className="ml-2"
-                >
-                  View
-                </Button>
-                {canEditDisc(disc) && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/lost-and-found/edit/${disc.id}`)}
-                      className="ml-2"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(disc.id)}
-                      className="ml-2 text-red-600"
-                    >
-                      Delete
-                    </Button>
-                  </>
-                )}
+                <div className="flex justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.push(`/lost-discs/${disc.id}`)}
+                    className="h-8 w-8"
+                    title="View Details"
+                  >
+                    <ExternalLinkIcon className="h-4 w-4" />
+                  </Button>
+                  {canEditDisc(disc) && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.push(`/lost-and-found/edit/${disc.id}`)}
+                        className="h-8 w-8"
+                        title="Edit"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteClick(disc.id)}
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete"
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -506,21 +505,6 @@ export default function LostAndFound() {
             renderGridView()
           ) : (
             renderListView()
-          )}
-
-          {/* Debug info - only visible in development */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-8 p-4 border rounded bg-gray-50 text-xs">
-              <h3 className="font-bold mb-2">Debug Info:</h3>
-              <p>User ID: {user?.id || "Not logged in"}</p>
-              <p>Total discs: {discs.length}</p>
-              <p>Filtered discs: {filteredDiscs.length}</p>
-              <p>View mode: {viewMode}</p>
-              <p>Has error: {fetchError ? "Yes" : "No"}</p>
-              <Button variant="outline" size="sm" onClick={fetchDiscs} className="mt-2">
-                Refresh Data
-              </Button>
-            </div>
           )}
         </div>
 

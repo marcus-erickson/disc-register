@@ -9,7 +9,6 @@ import { Menu, Disc, Search, PlusCircle, Home, User, CheckCircle, Settings } fro
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/app/context/AuthContext"
 import { isUserAdmin } from "@/app/actions/admin-actions"
-import { toast } from "@/components/ui/use-toast"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -28,21 +27,8 @@ export function MobileNav() {
           console.log("Mobile nav: Admin status result:", adminStatus)
           setIsAdmin(adminStatus)
           setIsAdminChecked(true)
-
-          // For debugging on mobile
-          if (adminStatus) {
-            toast({
-              title: "Admin Status (Mobile)",
-              description: "You have administrator privileges",
-            })
-          }
         } catch (error) {
           console.error("Error checking admin status:", error)
-          toast({
-            title: "Admin Check Error",
-            description: "Could not verify administrator status",
-            variant: "destructive",
-          })
         }
       }
     }
@@ -139,29 +125,6 @@ export function MobileNav() {
               )
             })}
           </nav>
-
-          {/* Debug info - only visible in development */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-4 p-2 text-xs bg-gray-100 rounded">
-              <p>User ID: {user?.id || "Not logged in"}</p>
-              <p>Admin: {isAdmin ? "Yes" : "No"}</p>
-              <p>Admin Checked: {isAdminChecked ? "Yes" : "No"}</p>
-              <button
-                onClick={async () => {
-                  if (user) {
-                    const status = await isUserAdmin(user.id)
-                    toast({
-                      title: "Admin Check (Mobile)",
-                      description: `Admin status: ${status ? "Yes" : "No"}`,
-                    })
-                  }
-                }}
-                className="mt-1 text-xs text-blue-600 underline"
-              >
-                Check Admin
-              </button>
-            </div>
-          )}
         </div>
       </SheetContent>
     </Sheet>

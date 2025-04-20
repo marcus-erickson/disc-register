@@ -285,13 +285,11 @@ export default function ForSale() {
             <TableHead className="w-[80px]">Image</TableHead>
             <TableHead>Mold</TableHead>
             <TableHead>Brand</TableHead>
-            <TableHead>Plastic</TableHead>
-            <TableHead>Weight</TableHead>
-            <TableHead>Color</TableHead>
-            <TableHead>Stamp</TableHead>
-            <TableHead>Condition</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="hidden sm:table-cell">Plastic</TableHead>
+            <TableHead className="hidden sm:table-cell">Weight</TableHead>
+            <TableHead className="hidden md:table-cell">Color</TableHead>
+            <TableHead className="hidden md:table-cell">Condition</TableHead>
+            <TableHead className="hidden md:table-cell">Price</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -323,18 +321,12 @@ export default function ForSale() {
                 </button>
               </TableCell>
               <TableCell>{formatBrandName(disc.brand)}</TableCell>
-              <TableCell>{disc.plastic}</TableCell>
-              <TableCell>{disc.weight}g</TableCell>
-              <TableCell>{disc.color}</TableCell>
-              <TableCell>{disc.stamp || "-"}</TableCell>
-              <TableCell>{disc.condition}</TableCell>
-              <TableCell className="font-medium">${disc.price}</TableCell>
-              <TableCell>
-                {disc.inked && (
-                  <Badge variant="outline" className="text-xs px-2 py-0.5">
-                    Inked
-                  </Badge>
-                )}
+              <TableCell className="hidden sm:table-cell">{disc.plastic}</TableCell>
+              <TableCell className="hidden sm:table-cell">{disc.weight}g</TableCell>
+              <TableCell className="hidden md:table-cell">{disc.color}</TableCell>
+              <TableCell className="hidden md:table-cell">{disc.condition}</TableCell>
+              <TableCell className="hidden md:table-cell" className="font-medium">
+                ${disc.price}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">

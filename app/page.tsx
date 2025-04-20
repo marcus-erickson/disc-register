@@ -239,19 +239,13 @@ export default function Home() {
 
             {/* Main disc info - smaller text */}
             <div className="space-y-0.5 mb-1">
-              <p className="text-sm truncate">{formatBrandName(disc.brand)}</p>
+              <div className="flex justify-between items-center">
+                <p className="text-sm truncate">{formatBrandName(disc.brand)}</p>
+                {disc.condition && <p className="text-sm text-gray-500">{disc.condition}</p>}
+              </div>
               <p className="text-sm truncate">
                 {disc.name} • {disc.weight}g
               </p>
-            </div>
-
-            {/* Badges - only show inked badge now */}
-            <div className="flex flex-wrap gap-2 mb-1">
-              {disc.inked && (
-                <Badge variant="outline" className="text-xs py-0 px-1.5">
-                  Inked
-                </Badge>
-              )}
             </div>
           </div>
 
@@ -292,12 +286,11 @@ export default function Home() {
             <TableHead className="w-[80px]">Image</TableHead>
             <TableHead>Mold</TableHead>
             <TableHead>Brand</TableHead>
-            <TableHead>Plastic</TableHead>
-            <TableHead>Weight</TableHead>
-            <TableHead>Color</TableHead>
-            <TableHead>Stamp</TableHead>
-            <TableHead>Condition</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="hidden sm:table-cell">Plastic</TableHead>
+            <TableHead className="hidden sm:table-cell">Weight</TableHead>
+            <TableHead className="hidden md:table-cell">Color</TableHead>
+            <TableHead className="hidden md:table-cell">Condition</TableHead>
+            <TableHead className="hidden md:table-cell">Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -329,12 +322,11 @@ export default function Home() {
                 </button>
               </TableCell>
               <TableCell>{formatBrandName(disc.brand)}</TableCell>
-              <TableCell>{disc.plastic}</TableCell>
-              <TableCell>{disc.weight}g</TableCell>
-              <TableCell>{disc.color}</TableCell>
-              <TableCell>{disc.stamp || "-"}</TableCell>
-              <TableCell>{disc.condition}</TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">{disc.plastic}</TableCell>
+              <TableCell className="hidden sm:table-cell">{disc.weight}g</TableCell>
+              <TableCell className="hidden md:table-cell">{disc.color}</TableCell>
+              <TableCell className="hidden md:table-cell">{disc.condition}</TableCell>
+              <TableCell className="hidden md:table-cell">
                 <div className="flex flex-col gap-1">
                   {disc.for_sale && <Badge className="bg-green-500 text-xs px-2 py-0.5">${disc.price}</Badge>}
                   {disc.inked && (

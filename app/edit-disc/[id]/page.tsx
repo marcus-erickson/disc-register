@@ -51,6 +51,20 @@ export default function EditDisc() {
     price: "",
   })
 
+  // Condition options with descriptions
+  const conditionOptions = [
+    { value: "10", label: "10 - Never thrown, no ink, brand new condition" },
+    { value: "9", label: "9 - Field tested or used for one or two rounds" },
+    { value: "8", label: "8 - Lightly used with very minimal wear" },
+    { value: "7", label: "7 - Used with some minor dings or scuffs but still in good shape" },
+    { value: "6", label: "6 - Typical used disc with the usual dings, scratches but still worthy" },
+    { value: "5", label: "5 - Kinda beat, significant wear, has lost a good bit of it's stability" },
+    { value: "4", label: "4 - Beat up turnover disc with some evident war story wear" },
+    { value: "3", label: "3 or under - Beat to Hades dog chew toy" },
+    { value: "2", label: "2 - Very poor condition" },
+    { value: "1", label: "1 - Barely usable" },
+  ]
+
   useEffect(() => {
     const fetchDisc = async () => {
       if (!user || !discId) return
@@ -265,7 +279,22 @@ export default function EditDisc() {
             </div>
             <div>
               <Label htmlFor="condition">Condition</Label>
-              <Input type="text" id="condition" name="condition" value={disc.condition} onChange={handleChange} />
+              <Select
+                value={disc.condition}
+                onValueChange={(value) => setDisc((prev) => ({ ...prev, condition: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not-specified">Not specified</SelectItem>
+                  {conditionOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="notes">Notes</Label>
