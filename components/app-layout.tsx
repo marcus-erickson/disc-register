@@ -6,8 +6,9 @@ import { useAuth } from "@/app/context/AuthContext"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { MobileNav } from "./mobile-nav"
-// Update the imports to include Search icon
+// Add ThemeToggle to the imports
 import { User, PlusCircle, Upload, Search, LogOut } from "lucide-react"
+import { ThemeToggle } from "./theme-toggle"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -43,7 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex flex-col">
       {/* Green banner */}
       {/* Replace the header section with this updated version */}
-      <header className="bg-green-600 text-white shadow-md">
+      <header className="bg-green-600 text-white shadow-md dark:bg-gray-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
             <MobileNav />
@@ -53,21 +54,21 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/add-disc"
-                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md dark:bg-green-600 dark:hover:bg-green-700"
               >
                 <PlusCircle className="h-4 w-4" />
                 <span>Add Disc</span>
               </Link>
               <Link
                 href="/report-lost-disc"
-                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md dark:bg-green-600 dark:hover:bg-green-700"
               >
                 <Search className="h-4 w-4" />
                 <span>Report Lost</span>
               </Link>
               <Link
                 href="/import-discs"
-                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md dark:bg-green-600 dark:hover:bg-green-700"
               >
                 <Upload className="h-4 w-4" />
                 <span>Import</span>
@@ -84,6 +85,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </Link>
+              <ThemeToggle />
             </div>
           )}
         </div>
@@ -91,12 +93,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-72 bg-white border-r p-4 hidden md:block">
+        <aside className="w-72 bg-white border-r p-4 hidden md:block dark:bg-gray-900 dark:border-gray-700">
           <SidebarNav />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 bg-gray-50">{children}</main>
+        <main className="flex-1 bg-gray-50 dark:bg-gray-950">{children}</main>
       </div>
     </div>
   )
