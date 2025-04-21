@@ -360,10 +360,10 @@ export default function LostAndFound() {
       {filteredDiscs.map((disc) => (
         <Card
           key={disc.id}
-          className="overflow-hidden relative cursor-pointer hover:shadow-md transition-shadow"
+          className="overflow-hidden relative cursor-pointer hover:shadow-md transition-shadow h-full"
           onClick={() => router.push(`/lost-discs/${disc.id}`)}
         >
-          <div className="p-3">
+          <div className="p-3 flex flex-col h-full" style={{ minHeight: "360px" }}>
             {/* Image */}
             <div className="mb-3">
               {disc.images && disc.images.length > 0 ? (
@@ -383,41 +383,46 @@ export default function LostAndFound() {
             </div>
 
             {/* Main disc info - simplified */}
-            <h3 className="text-lg font-bold truncate">{`${formatBrandName(disc.brand)} ${disc.name}`}</h3>
-            <div className="text-sm text-gray-600 mb-2">{disc.color}</div>
+            <div className="flex-grow">
+              <h3 className="text-lg font-bold truncate">{`${formatBrandName(disc.brand)} ${disc.name}`}</h3>
+              <div className="text-sm text-gray-600 mb-2">{disc.color}</div>
 
-            {/* Written info (if available) */}
-            {disc.written_info && <div className="text-sm text-gray-600 mb-2 italic">"{disc.written_info}"</div>}
+              {/* Written info (if available) */}
+              {disc.written_info && <div className="text-sm text-gray-600 mb-2 italic">"{disc.written_info}"</div>}
 
-            {/* Date found */}
-            <div className="flex items-center text-sm text-gray-600 mb-1">
-              <CalendarIcon className="h-4 w-4 mr-1 flex-shrink-0" />
-              <span>Found: {formatDate(disc.date_found)}</span>
+              {/* Date found */}
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <CalendarIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span>Found: {formatDate(disc.date_found)}</span>
+              </div>
             </div>
 
-            {/* Found by */}
-            <div className="text-xs text-gray-600 mb-3">Found by: {disc.finder_name || "Unknown"}</div>
+            {/* Footer section - always at bottom */}
+            <div className="mt-auto">
+              {/* Found by */}
+              <div className="text-xs text-gray-600 mb-3">Found by: {disc.finder_name || "Unknown"}</div>
 
-            {/* Two buttons: View and Claim */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 flex items-center justify-center gap-1"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  router.push(`/lost-discs/${disc.id}`)
-                }}
-              >
-                <ExternalLinkIcon className="h-4 w-4" />
-                View
-              </Button>
-              <Button
-                variant="default"
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                onClick={(e) => handleClaimClick(disc, e)}
-              >
-                Claim
-              </Button>
+              {/* Two buttons: View and Claim */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/lost-discs/${disc.id}`)
+                  }}
+                >
+                  <ExternalLinkIcon className="h-4 w-4" />
+                  View
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={(e) => handleClaimClick(disc, e)}
+                >
+                  Claim
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
