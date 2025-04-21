@@ -123,10 +123,18 @@ export default function Home() {
       for (const disc of discsWithImages) {
         if (disc.images && disc.images.length > 0) {
           try {
-            const url = await getImageUrl(disc.images[0])
+            // Add a timeout to the getImageUrl call to prevent hanging
+            const imagePromise = Promise.race([
+              getImageUrl(disc.images[0]),
+              new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Image fetch timeout")), 5000)),
+            ])
+
+            const url = await imagePromise
             urlMap[disc.id] = url
           } catch (error) {
             console.error(`Error getting image URL for disc ${disc.id}:`, error)
+            // Use a placeholder image instead of failing
+            urlMap[disc.id] = "/flying-disc-in-park.png"
           }
         }
       }

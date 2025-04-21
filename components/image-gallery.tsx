@@ -29,16 +29,31 @@ export default function ImageGallery({ imagePaths }: ImageGalleryProps) {
           return
         }
 
-        const urls = await Promise.all(
-          imagePaths.map(async (path) => {
-            try {
-              return await getImageUrl(path)
-            } catch (error) {
-              console.error(`Error loading image ${path}:`, error)
-              return null
-            }
-          }),
-        )
+        // Process paths in batches to avoid too many parallel requests
+        const batchSize = 3
+        const urls: string[] = []
+
+        for (let i = 0; i < imagePaths.length; i += batchSize) {
+          const batch = imagePaths.slice(i, i + batchSize)
+          const batchResults = await Promise.all(
+            batch.map(async (path) => {
+              try {
+                // Add timeout to prevent hanging
+                const imagePromise = Promise.race([
+                  getImageUrl(path),
+                  new Promise<string>((_, reject) => setTimeout(() => reject(new Error("Image fetch timeout")), 5000)),
+                ])
+
+                return await imagePromise
+              } catch (error) {
+                console.error(`Error loading image ${path}:`, error)
+                return "/flying-disc-in-park.png"
+              }
+            }),
+          )
+
+          urls.push(...batchResults)
+        }
 
         // Filter out any null values from failed image loads
         const validUrls = urls.filter((url) => url !== null) as string[]

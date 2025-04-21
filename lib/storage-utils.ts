@@ -57,11 +57,28 @@ export async function getImageUrl(path: string): Promise<string> {
   const bucketName = "disc-images"
 
   try {
-    const { data } = supabase.storage.from(bucketName).getPublicUrl(path)
+    if (!path || typeof path !== "string") {
+      console.warn("Invalid image path provided:", path)
+      return "/flying-disc-in-park.png"
+    }
+
+    const { data, error } = supabase.storage.from(bucketName).getPublicUrl(path)
+
+    if (error) {
+      console.error("Supabase storage error:", error)
+      throw error
+    }
+
+    if (!data || !data.publicUrl) {
+      console.warn("No public URL returned for path:", path)
+      return "/flying-disc-in-park.png"
+    }
+
     return data.publicUrl
   } catch (error) {
     console.error("Error getting image URL:", error)
-    throw error
+    // Return a placeholder image instead of throwing
+    return "/flying-disc-in-park.png"
   }
 }
 
