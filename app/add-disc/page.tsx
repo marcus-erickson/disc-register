@@ -18,6 +18,8 @@ import ImageUpload from "@/components/image-upload"
 import { Toaster } from "@/components/ui/toaster"
 import VoiceInput from "@/components/voice-input"
 import { toast } from "@/components/ui/use-toast"
+// Add the import at the top of the file
+import { normalizeBrandName } from "@/lib/format-utils"
 
 export default function AddDisc() {
   const router = useRouter()
@@ -75,8 +77,8 @@ export default function AddDisc() {
         .insert({
           user_id: user.id,
           name: disc.name,
-          brand: disc.brand,
-          plastic: disc.plastic,
+          brand: normalizeBrandName(disc.brand), // Normalize the brand name
+          plastic: disc.plastic || "Unknown", // Set default value instead of empty string
           weight: disc.weight,
           condition: disc.condition,
           color: disc.color,

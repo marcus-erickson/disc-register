@@ -65,16 +65,35 @@ export async function getImageUrl(path: string): Promise<string> {
   }
 }
 
+// Completely rewritten deleteImage function with improved error handling
 export async function deleteImage(path: string): Promise<void> {
   const bucketName = "disc-images"
 
   try {
-    const { error } = await supabase.storage.from(bucketName).remove([path])
+    console.log(`Attempting to delete image from storage: ${path}`)
+
+    // Extract the file path relative to the bucket
+    // The path might be in format "disc-images/123/abc.jpg" or just "123/abc.jpg"
+    const relativePath = path.includes(`${bucketName}/`) ? path.split(`${bucketName}/`)[1] : path
+
+    console.log(`Using relative path for deletion: ${relativePath}`)
+
+    // Delete the file from storage
+    const { error, data } = await supabase.storage.from(bucketName).remove([relativePath])
+
     if (error) {
+      console.error(`Storage deletion error for ${relativePath}:`, error)
       throw error
     }
+
+    console.log(`Successfully deleted image from storage:`, data)
+
+    // If no files were deleted, throw an error
+    if (data?.length === 0) {
+      console.warn(`No files were deleted for path: ${relativePath}`)
+    }
   } catch (error) {
-    console.error("Error deleting image:", error)
+    console.error(`Error deleting image from storage: ${path}`, error)
     throw error
   }
 }

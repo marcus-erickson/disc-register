@@ -102,6 +102,22 @@ export default function Home() {
       setDiscs(discsWithImages || [])
       setFilteredDiscs(discsWithImages || [])
 
+      // Sort discs by brand and then by name
+      const sortDiscs = (discsToSort: any[]) => {
+        return [...discsToSort].sort((a, b) => {
+          // First sort by brand
+          const brandComparison = a.brand.localeCompare(b.brand)
+          if (brandComparison !== 0) return brandComparison
+
+          // If brands are the same, sort by name
+          return a.name.localeCompare(b.name)
+        })
+      }
+
+      // Apply sorting to both the full collection and filtered discs
+      setDiscs(sortDiscs(discsWithImages || []))
+      setFilteredDiscs(sortDiscs(discsWithImages || []))
+
       // Pre-fetch image URLs for the list view
       const urlMap: Record<string, string> = {}
       for (const disc of discsWithImages) {
@@ -142,6 +158,16 @@ export default function Home() {
     if (filters.brand) {
       result = result.filter((disc) => disc.brand === filters.brand)
     }
+
+    // Apply sorting after filtering
+    result = result.sort((a, b) => {
+      // First sort by brand
+      const brandComparison = a.brand.localeCompare(b.brand)
+      if (brandComparison !== 0) return brandComparison
+
+      // If brands are the same, sort by name
+      return a.name.localeCompare(b.name)
+    })
 
     setFilteredDiscs(result)
   }, [discs, filters])

@@ -5,43 +5,48 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Disc, Search, PlusCircle, Home, User, CheckCircle, Settings } from "lucide-react"
+import { Menu, Disc, Search, Home, User, CheckCircle, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/app/context/AuthContext"
 import { isUserAdmin } from "@/app/actions/admin-actions"
+
+// Create a global admin status cache to prevent multiple checks
+const globalAdminStatus: Record<string, boolean> = {}
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const { user } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isAdminChecked, setIsAdminChecked] = useState(false)
+  const [isAdminChecking, setIsAdminChecking] = useState(false)
 
-  // Check if the user is an admin
+  // Check if the user is an admin - with debounce and global cache
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user) {
-        try {
-          console.log("Mobile nav: Checking admin status for user:", user.id)
-          const adminStatus = await isUserAdmin(user.id)
-          console.log("Mobile nav: Admin status result:", adminStatus)
-          setIsAdmin(adminStatus)
-          setIsAdminChecked(true)
-        } catch (error) {
-          console.error("Error checking admin status:", error)
-        }
+      if (!user || isAdminChecking) return
+
+      // Check global cache first
+      if (user.id in globalAdminStatus) {
+        setIsAdmin(globalAdminStatus[user.id])
+        return
+      }
+
+      try {
+        setIsAdminChecking(true)
+        const adminStatus = await isUserAdmin(user.id)
+
+        // Update global cache
+        globalAdminStatus[user.id] = adminStatus
+        setIsAdmin(adminStatus)
+      } catch (error) {
+        console.error("Error checking admin status in mobile nav:", error)
+      } finally {
+        setIsAdminChecking(false)
       }
     }
 
     checkAdminStatus()
-  }, [user])
-
-  // Log navigation state for debugging
-  useEffect(() => {
-    console.log("Mobile Nav rendered with path:", pathname)
-    console.log("User authenticated:", !!user)
-    console.log("Admin status:", isAdmin)
-  }, [pathname, user, isAdmin])
+  }, [user, isAdminChecking])
 
   const navItems = [
     {
@@ -63,16 +68,6 @@ export function MobileNav() {
       title: "Lost and Found",
       href: "/lost-discs",
       icon: <Search className="h-5 w-5 mr-2" />,
-    },
-    {
-      title: "Add Disc",
-      href: "/add-disc",
-      icon: <PlusCircle className="h-5 w-5 mr-2" />,
-    },
-    {
-      title: "Report Lost Disc",
-      href: "/report-lost-disc",
-      icon: <PlusCircle className="h-5 w-5 mr-2" />,
     },
     {
       title: "Disc Claims",

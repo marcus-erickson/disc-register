@@ -3,11 +3,11 @@
 import type { ReactNode } from "react"
 import { SidebarNav } from "./sidebar-nav"
 import { useAuth } from "@/app/context/AuthContext"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { MobileNav } from "./mobile-nav"
-import { User } from "lucide-react"
+// Update the imports to include Search icon
+import { User, PlusCircle, Upload, Search, LogOut } from "lucide-react"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -42,6 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Green banner */}
+      {/* Replace the header section with this updated version */}
       <header className="bg-green-600 text-white shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -49,18 +50,40 @@ export function AppLayout({ children }: AppLayoutProps) {
             <h1 className="text-2xl font-bold">Disc Register</h1>
           </div>
           {user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Link
+                href="/add-disc"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>Add Disc</span>
+              </Link>
+              <Link
+                href="/report-lost-disc"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+              >
+                <Search className="h-4 w-4" />
+                <span>Report Lost</span>
+              </Link>
+              <Link
+                href="/import-discs"
+                className="hidden md:flex items-center gap-1 text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Import</span>
+              </Link>
               <Link href="/profile" className="hidden md:flex items-center gap-2 text-white hover:text-green-100">
                 <User className="h-4 w-4" />
                 <span>{userName || "Profile"}</span>
               </Link>
-              <Button
-                variant="outline"
-                className="text-green-600 bg-white border-white hover:bg-green-700 hover:text-white"
+              <Link
+                href="#"
                 onClick={signOut}
+                className="hidden md:flex items-center gap-1 text-white hover:text-green-100"
               >
-                Logout
-              </Button>
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </Link>
             </div>
           )}
         </div>
@@ -70,15 +93,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sidebar */}
         <aside className="w-72 bg-white border-r p-4 hidden md:block">
           <SidebarNav />
-
-          <div className="mt-8 pt-4 border-t">
-            <Link
-              href="/add-disc"
-              className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-            >
-              Add New Disc
-            </Link>
-          </div>
         </aside>
 
         {/* Main content */}

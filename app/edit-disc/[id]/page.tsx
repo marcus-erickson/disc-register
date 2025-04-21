@@ -16,9 +16,11 @@ import ProtectedRoute from "@/components/protected-route"
 import { AppLayout } from "@/components/app-layout"
 import ImageUpload from "@/components/image-upload"
 import ImageGallery from "@/components/image-gallery"
-import { Trash2 } from "lucide-react"
+import { Trash2, Loader2 } from "lucide-react"
 import { deleteImage } from "@/lib/storage-utils"
 import { Toaster } from "@/components/ui/toaster"
+import { toast } from "@/components/ui/use-toast"
+import { normalizeBrandName } from "@/lib/format-utils"
 
 interface DiscImage {
   id: string
@@ -36,6 +38,7 @@ export default function EditDisc() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [existingImages, setExistingImages] = useState<DiscImage[]>([])
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null)
 
   const [disc, setDisc] = useState({
     name: "",
@@ -142,8 +145,8 @@ export default function EditDisc() {
         .from("discs")
         .update({
           name: disc.name,
-          brand: disc.brand,
-          plastic: disc.plastic,
+          brand: normalizeBrandName(disc.brand), // Normalize the brand name
+          plastic: disc.plastic || "Unknown", // Set default value instead of null
           weight: disc.weight,
           condition: disc.condition,
           color: disc.color,
@@ -160,17 +163,31 @@ export default function EditDisc() {
       }
 
       // Handle image deletions
-      for (const imageId of imagesToDelete) {
-        const imageToDelete = existingImages.find((img) => img.id === imageId)
-        if (imageToDelete) {
-          // Delete from storage
-          await deleteImage(imageToDelete.storage_path)
+      if (imagesToDelete.length > 0) {
+        console.log(`Deleting ${imagesToDelete.length} images:`, imagesToDelete)
 
-          // Delete from database
-          const { error: deleteError } = await supabase.from("disc_images").delete().eq("id", imageId)
+        for (const imageId of imagesToDelete) {
+          const imageToDelete = existingImages.find((img) => img.id === imageId)
+          if (imageToDelete) {
+            try {
+              console.log(`Deleting image ${imageId} with path ${imageToDelete.storage_path}`)
 
-          if (deleteError) {
-            console.error("Error deleting image:", deleteError)
+              // Delete from storage
+              await deleteImage(imageToDelete.storage_path)
+
+              // Delete from database
+              const { error: deleteError } = await supabase.from("disc_images").delete().eq("id", imageId)
+
+              if (deleteError) {
+                console.error(`Error deleting image ${imageId} from database:`, deleteError)
+                throw deleteError
+              }
+
+              console.log(`Successfully deleted image ${imageId}`)
+            } catch (error) {
+              console.error(`Failed to delete image ${imageId}:`, error)
+              setError(`Failed to delete image. Please try again.`)
+            }
           }
         }
       }
@@ -188,6 +205,11 @@ export default function EditDisc() {
           console.error("Error saving image references:", imageError)
         }
       }
+
+      toast({
+        title: "Success",
+        description: "Disc updated successfully",
+      })
 
       router.push("/")
     } catch (error) {
@@ -207,13 +229,49 @@ export default function EditDisc() {
     }))
   }
 
-  const handleImageUploaded = (path: string) => {
-    setUploadedImages((prev) => [...prev, path])
+  const handleImageUploaded = (newImagePath: string) => {
+    setUploadedImages((prev) => [...prev, newImagePath])
   }
 
-  const handleDeleteImage = (imageId: string) => {
-    setImagesToDelete((prev) => [...prev, imageId])
-    setExistingImages((prev) => prev.filter((img) => img.id !== imageId))
+  // Updated to delete images immediately
+  const handleDeleteImage = async (imageId: string) => {
+    try {
+      setDeletingImageId(imageId)
+
+      const imageToDelete = existingImages.find((img) => img.id === imageId)
+      if (!imageToDelete) {
+        throw new Error("Image not found")
+      }
+
+      console.log(`Deleting image ${imageId} with path ${imageToDelete.storage_path}`)
+
+      // Delete from storage
+      await deleteImage(imageToDelete.storage_path)
+
+      // Delete from database
+      const { error: deleteError } = await supabase.from("disc_images").delete().eq("id", imageId)
+
+      if (deleteError) {
+        throw deleteError
+      }
+
+      // Update UI by removing the deleted image
+      setExistingImages((prev) => prev.filter((img) => img.id !== imageId))
+
+      toast({
+        title: "Success",
+        description: "Image deleted successfully",
+      })
+    } catch (error) {
+      console.error(`Failed to delete image ${imageId}:`, error)
+      toast({
+        title: "Error",
+        description: "Failed to delete image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingImageId(null)
+    }
   }
 
   if (isLoading) {
@@ -346,8 +404,13 @@ export default function EditDisc() {
                             onClick={() => handleDeleteImage(image.id)}
                             className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
                             aria-label="Delete image"
+                            disabled={deletingImageId === image.id}
                           >
-                            <Trash2 size={16} />
+                            {deletingImageId === image.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
                           </button>
                         </div>
                       </div>

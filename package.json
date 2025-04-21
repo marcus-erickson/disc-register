@@ -63,6 +63,7 @@
     "path": "latest",
     "child_process": "latest",
     "@supabase/auth-helpers-nextjs": "latest",
+    "xlsx": "latest",
     "uuid": "latest"
   },
   "devDependencies": {

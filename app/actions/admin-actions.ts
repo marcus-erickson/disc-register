@@ -3,8 +3,20 @@
 import { supabase } from "@/lib/supabase"
 import { createClient } from "@supabase/supabase-js"
 
+// Simple in-memory cache for admin status
+// Note: This will be reset on server restart
+const adminStatusCache: Record<string, { isAdmin: boolean; timestamp: number }> = {}
+const CACHE_TTL = 1000 * 60 * 5 // 5 minutes
+
 export async function isUserAdmin(userId: string | undefined): Promise<boolean> {
   if (!userId) return false
+
+  // Check cache first
+  const cachedStatus = adminStatusCache[userId]
+  if (cachedStatus && Date.now() - cachedStatus.timestamp < CACHE_TTL) {
+    console.log("Using cached admin status for user:", userId)
+    return cachedStatus.isAdmin
+  }
 
   try {
     // First try to get from profiles table
@@ -13,30 +25,27 @@ export async function isUserAdmin(userId: string | undefined): Promise<boolean> 
     if (error) {
       console.error("Error checking admin status:", error)
 
-      // Try to check using the service role key for more reliable access
-      const supabaseAdmin = createAdminClient()
-      const { data: adminData, error: adminError } = await supabaseAdmin
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", userId)
-        .single()
-
-      if (adminError || !adminData) {
-        console.error("Admin client error checking admin status:", adminError)
-        return false
-      }
-
-      return adminData.is_admin === true
+      // Return false for any error - don't try to use admin client
+      // This prevents cascading errors and rate limiting issues
+      return false
     }
 
-    return data?.is_admin === true
-  } catch (error) {
-    console.error("Error in isUserAdmin:", error)
+    // Cache the result
+    const isAdmin = data?.is_admin === true
+    adminStatusCache[userId] = { isAdmin, timestamp: Date.now() }
+
+    return isAdmin
+  } catch (error: any) {
+    // This will catch JSON parsing errors and any other unexpected errors
+    console.error("Unexpected error in isUserAdmin:", error)
+
+    // If we get here, something went wrong - default to non-admin for safety
     return false
   }
 }
 
 // Helper function to create an admin client with service role
+// Note: We're not using this anymore to avoid potential rate limiting issues
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
