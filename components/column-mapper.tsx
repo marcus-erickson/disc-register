@@ -48,6 +48,12 @@ export default function ColumnMapper({ headers, previewData, onChange }: ColumnM
           return
         }
 
+        // Special case for name/mold
+        if (lowerHeader.includes("name") || lowerHeader.includes("mold") || lowerHeader === "disc") {
+          initialMapping[header] = "name"
+          return
+        }
+
         // Try to find a matching field
         const matchedField = discFields.find(
           (field) => field.value !== "none" && lowerHeader.includes(field.value.toLowerCase()),

@@ -145,6 +145,15 @@ export default function ImportDiscs() {
         }
       })
 
+      // Ensure brand and name are provided - add default values if missing
+      if (!discData.brand || discData.brand.trim() === "") {
+        discData.brand = "other" // Default brand if missing
+      }
+
+      if (!discData.name || discData.name.trim() === "") {
+        discData.name = "Unknown" // Default name if missing
+      }
+
       // Handle special fields
       if (
         discData.for_sale === "Yes" ||

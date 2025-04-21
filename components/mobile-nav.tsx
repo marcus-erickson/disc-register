@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Disc, Search, Home, User, CheckCircle, Settings } from "lucide-react"
+import { Menu, Disc, Search, User, CheckCircle, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/app/context/AuthContext"
 import { isUserAdmin } from "@/app/actions/admin-actions"
@@ -48,20 +48,11 @@ export function MobileNav() {
     checkAdminStatus()
   }, [user, isAdminChecking])
 
+  // Update the navItems array to match the sidebar-nav.tsx items
   const navItems = [
-    {
-      title: "Home",
-      href: "/",
-      icon: <Home className="h-5 w-5 mr-2" />,
-    },
     {
       title: "My Discs",
       href: "/",
-      icon: <Disc className="h-5 w-5 mr-2" />,
-    },
-    {
-      title: "For Sale",
-      href: "/for-sale",
       icon: <Disc className="h-5 w-5 mr-2" />,
     },
     {

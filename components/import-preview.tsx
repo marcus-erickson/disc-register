@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 
 interface ImportPreviewProps {
   previewData: any[]
@@ -65,6 +66,11 @@ export default function ImportPreview({ previewData, columnMapping, unmappedColu
     })
   }, [previewData, columnMapping, unmappedColumns])
 
+  // Check if any rows are missing required fields
+  const missingRequiredFields = useMemo(() => {
+    return transformedData.some((row) => !row.brand || !row.name)
+  }, [transformedData])
+
   // Get unique fields from transformed data
   const fields = useMemo(() => {
     const allFields = new Set<string>()
@@ -82,6 +88,17 @@ export default function ImportPreview({ previewData, columnMapping, unmappedColu
           Review how your data will be imported. This shows the first few rows after mapping.
         </p>
       </div>
+
+      {missingRequiredFields && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Missing Required Fields</AlertTitle>
+          <AlertDescription>
+            Some rows are missing brand or name values, which are required. Please ensure these fields are properly
+            mapped.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {unmappedColumns.length > 0 && (
         <Alert>

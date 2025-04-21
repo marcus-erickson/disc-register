@@ -17,12 +17,18 @@ interface DiscImportData {
   price?: number
 }
 
-// Update the importDisc function to normalize the brand name
+// Update the importDisc function to provide better error messages
+// Around line 20-30
+
 export async function importDisc(discData: DiscImportData, userId: string) {
   try {
-    // Validate required fields
-    if (!discData.brand || !discData.name) {
-      throw new Error("Brand and name are required fields")
+    // Validate required fields with more specific error messages
+    if (!discData.brand) {
+      throw new Error("Brand is required. Please ensure the brand field is mapped correctly.")
+    }
+
+    if (!discData.name) {
+      throw new Error("Disc name/mold is required. Please ensure the name field is mapped correctly.")
     }
 
     // Format the data
