@@ -1,2 +1,0 @@
-# Mark Supabase functions as vendored to exclude from language statistics
-supabase/functions/* linguist-vendored

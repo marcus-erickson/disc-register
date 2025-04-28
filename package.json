@@ -58,13 +58,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "@supabase/supabase-js": "latest",
-    "fs": "latest",
-    "path": "latest",
-    "child_process": "latest",
-    "@supabase/auth-helpers-nextjs": "latest",
-    "xlsx": "latest",
-    "uuid": "latest"
+    "immer": "latest",
+    "use-sync-external-store": "latest",
+    "zustand": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

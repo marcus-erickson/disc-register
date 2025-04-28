@@ -1,6 +1,0 @@
-# Ignore Supabase Edge Functions during Vercel build
-supabase/
-supabase/functions/
-**/supabase/functions/**
-**/*.deno.ts
-**/*.deno.js
